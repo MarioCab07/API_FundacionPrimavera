@@ -16,6 +16,13 @@ const superUserSchema = new Schema({
         unique: true
     },
 
+    username:{
+        type: String,
+        required: true,
+        trim: true,
+        unique: true
+    },
+
     hashedPassword:{
         type: String,
         required: true
