@@ -2,6 +2,7 @@ const debug = require('debug')('app:authMiddleware');
 const {verifyToken}= require("../utils/jwt.tools.js");
 //Import user model
 const superUser = require("../models/superUser.model.js")
+const { getPermissions } = require("../data/roles.data.js")
 
 
 const middlewares= {};
@@ -47,7 +48,8 @@ middlewares.authentication = async (req,res,next) =>{
         //Modify request object
         req.user = user;
         req.token = token;
-        
+        req.rol = user.role;
+
         next();
     } catch (error) {
         next(error);
@@ -57,4 +59,18 @@ middlewares.authentication = async (req,res,next) =>{
 }
 
 
+middlewares.authorization = (requiredPermission) =>{
+    return (req,res,next)=>{
+        const {user} = req;
+        const userRole = user.role;
+        const userPermissions = getPermissions(userRole);
+        
+        if ( userPermissions.includes(requiredPermission)){
+            next();
+        }
+
+        return res.status(403).json({error:"User not authorized"});
+        
+}
+}
 module.exports = middlewares;

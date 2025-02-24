@@ -9,11 +9,13 @@ let SignJWT, jwtVerify;
 
 
 const secret = new TextEncoder().encode(process.env.SECRET_TOKEN);
-const expTime = process.env.TOKEN_EXP_TIME;
+const expTimeShort = process.env.TOKEN_EXP_TIME_SHORT;
+const expTimeLong = process.env.TOKEN_EXP_TIME_LONG;
 const tools = {};
 
-tools.createToken = async (id) => {
-   return await new SignJWT()
+tools.createToken = async (id, rememberMe = false) => {
+    const expTime = rememberMe ? expTimeLong : expTimeShort
+    return await new SignJWT()
         .setProtectedHeader({alg: 'HS256'})
         .setSubject(id)
         .setExpirationTime(expTime)
