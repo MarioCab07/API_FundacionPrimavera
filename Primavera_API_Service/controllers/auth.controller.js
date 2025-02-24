@@ -4,6 +4,7 @@ const superUser = require ('../models/superUser.model.js');
 const tools =  require( "../utils/jwt.tools.js")
 const debug = require('debug')('app:server') ;
 
+
 const controller = {};
 
 //SuperUser Register
@@ -43,7 +44,7 @@ controller.superUserRegister = async(req,res,next)=>{
 controller.Login = async(req,res,next)=>{
 
     try {
-        const {username, password} = req.body;
+        const {username, password, rememberMe} = req.body;
         let isSuperUser = false;
 
         //Verify if is superUser
@@ -59,7 +60,7 @@ controller.Login = async(req,res,next)=>{
         }
 
         //Create Token
-        const token = await tools.createToken(user._id);
+        const token = await tools.createToken(user._id, rememberMe);
 
         //Save Token
         //Check Tokens lifetime - max 5 tokens
@@ -75,6 +76,14 @@ controller.Login = async(req,res,next)=>{
 
         _tokens = [token,..._tokens];
         user.tokens = _tokens;
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000, // 7 días o 15 min
+        });
+
+       
         
         await user.save();
         // Return Token
