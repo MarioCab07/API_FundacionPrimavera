@@ -1,7 +1,10 @@
-const Moongose = require('mongoose');
-const Schema = Moongose.Schema;
-const crypto = require('crypto');
+const Mongoose =require('mongoose');
+const { Schema } = Mongoose;
+const crypto =require('crypto');
 const debug = require('debug')('app:superUserModel');
+
+
+
 
 const superUserSchema = new Schema({
     name:{
@@ -35,6 +38,10 @@ const superUserSchema = new Schema({
     role:{
         type: String,
         default: 'superUser'
+    },
+    tokens:{
+        type: [String],
+        default: []
     }
 
 },{timestamps: true});
@@ -74,4 +81,4 @@ superUserSchema
         this.hashedPassword
 });
 
-module.exports = Moongose.model('SuperUser', superUserSchema);
+module.exports =  Mongoose.model('SuperUser', superUserSchema);

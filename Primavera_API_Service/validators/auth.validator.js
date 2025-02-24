@@ -1,4 +1,4 @@
-const {body} = require('express-validator');
+const { body } = require ('express-validator');
 
 const passwordRegexp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])[a-zA-Z0-9]{8,32}$/;
 

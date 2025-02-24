@@ -1,12 +1,18 @@
-const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const database = require('./config/database.config');
+const express = require ('express');
+const path = require ('path');
+const cookieParser = require ('cookie-parser');
+const logger = require ('morgan');
+const database = require ('./config/database.config.js');
+const errorMiddleware = require ('./middlewares/error.middleware.js');
 
-const apiRouter = require('./routes/index.router');
+
+
+const apiRouter = require ('./routes/index.router.js');
+
+
 
 const app = express();
+
 
 //Database connection
 database.connect();
@@ -26,4 +32,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/v1', apiRouter);
 
-module.exports = app;
+//Error middleware
+app.use(errorMiddleware);
+
+module.exports =  app;

@@ -1,11 +1,12 @@
-const Moongose = require('mongoose');
-const debug = require('debug')('app:database');
+const Moongose =require('mongoose')  ;
+const debug =require('debug')('app:database');
 
-const dbHost = process.env.DB_HOST || 'localhost'; 
-const dbPort = process.env.DB_PORT || '27017';
-const dbName = process.env.DB_NAME || 'PrimaveraDB';
 
-const dbURI = process.env.DB_URI || `mongodb://${dbHost}:${dbPort}/${dbName}`;
+const dbHost = process.env.DB_HOST ; 
+const dbPort = process.env.DB_PORT ;
+const dbName = process.env.DB_NAME ;
+
+const dbURI = process.env.DB_URI || "mongodb+srv://MarioCab07:D554B8F8mcd@cluster0.71oqw.mongodb.net/" ;
 
 /*
     Database connection method
@@ -14,6 +15,7 @@ const dbURI = process.env.DB_URI || `mongodb://${dbHost}:${dbPort}/${dbName}`;
 const connect = async () => {
 
     try {
+    
     await Moongose.connect(dbURI);
     debug("Database connected");
     } catch (error) {
@@ -38,7 +40,7 @@ try {
 };
 
 
-module.exports = {
+module.exports= {
     connect,
     disconnect
 };
