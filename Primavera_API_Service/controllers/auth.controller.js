@@ -1,5 +1,5 @@
 const superUser = require ('../models/superUser.model.js');
-
+const User = require ('../models/user.model.js');
 //const User = import()
 const tools =  require( "../utils/jwt.tools.js")
 const debug = require('debug')('app:server') ;
@@ -27,8 +27,7 @@ controller.superUserRegister = async(req,res,next)=>{
             name:name
         });
 
-        newSuperUser.salt = newSuperUser.makeSalt();
-        newSuperUser.hashedPassword = newSuperUser.encryptPassword(password);
+        
 
         await newSuperUser.save();
 
@@ -44,14 +43,21 @@ controller.superUserRegister = async(req,res,next)=>{
 controller.Login = async(req,res,next)=>{
 
     try {
-        const {username, password, rememberMe} = req.body;
-        let isSuperUser = false;
+        //TODO: Add rememberMe
+        const {username, password} = req.body;
+        
 
-        //Verify if is superUser
-        let user = await superUser.findOne({username:username});
+        //Verify if is User
+        let user = await User.findOne({username:username});
+        debug(username)
 
         if(!user){
-            return res.status(404).json({error:"User not found"});
+            //Verify if is SuperUser
+            user = await superUser.findOne({username:username});
+            if(!user){
+                return res.status(404).json({error:"User not found"});
+            }
+            
         }
 
         //Verify password
@@ -60,7 +66,7 @@ controller.Login = async(req,res,next)=>{
         }
 
         //Create Token
-        const token = await tools.createToken(user._id, rememberMe);
+        const token = await tools.createToken(user._id);
 
         //Save Token
         //Check Tokens lifetime - max 5 tokens
@@ -76,36 +82,23 @@ controller.Login = async(req,res,next)=>{
 
         _tokens = [token,..._tokens];
         user.tokens = _tokens;
+        
+            // res.cookie("token", token, {
+            //     httpOnly: true,
+            //     secure: process.env.NODE_ENV === "production",
+            //     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días o 15 min
+            // });
+        
+        
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000, // 7 días o 15 min
-        });
-
-       
+       debug("Creacion usuartio");
         
         await user.save();
         // Return Token
 
         return res.status(200).json({token});
 
-        // if(!user){
-            
-        //     user = await User.findOne({username:username});
-        //     if(!user){
-        //         return res.status(404).json({error:"User not found"});
-        //     }
-
-        // }else{
-        //     isSuperUser = true;
-        // }
-
         
-
-        // if(!isSuperUser){
-            
-        // }
 
 
 
@@ -113,10 +106,43 @@ controller.Login = async(req,res,next)=>{
     } catch (error) {
         
         debug("Error in superUserLogin", error);
-        next(error);
+        
     }
 }
 
+controller.userRegister = async(req,res,next)=>{
+    try {
+        const {name,dui,phone_number, role} = req.body;
+        const user =  await User.findOne({dui:dui});
+        if(user){
+            return res.status(409).json({error:"User already exists"});
+        }
+
+        const newUser = new User({
+            name:name,
+            phone_number:phone_number,
+            dui:dui,
+            role:role,
+        })
+        newUser.encryptPassword();
+        const password = newUser.desencryptPassword();
+        newUser.generateUser();
+
+        await newUser.save();
+
+        return res.status(201).json({message:"User created successfully",
+            username:newUser.username,
+            password:password
+        });
+
+
+
+
+    } catch (error) {
+        debug("Error in UserRegister", error);
+        
+    }
+} 
 
 
 module.exports = controller;
