@@ -144,5 +144,70 @@ controller.userRegister = async(req,res,next)=>{
     }
 } 
 
+controller.updateUser = async(req,res,next)=>{
+    try {
+        const {name,dui,phone_number,role}=req.body;
+        const {id} = req.params;
+        let user = await User.findById(id);
+        if(!user){
+            return res.status(404).json({error:"User not found"});
+        }
+        
+
+        user.name = name;
+        user.dui = dui;
+        user.phone_number = phone_number;
+        rol ? user.role = rol : user.role = user.role;
+
+        
+        user.generateUser();
+
+        await user.save();
+
+        return res.status(200).json({message:"User updated successfully",new_User:user.username});
+
+
+      } catch (error) {
+        debug("Error in updateUser", error);
+    }
+}
+
+controller.getAllUsers = async(req,res,next)=>{
+    try {
+        let Users = await User.find({},{ tokens: 0});
+        Users = Users.map((user) => {
+            return {
+                id: user._id,
+                name: user.name,
+                dui: user.dui,
+                phone_number: user.phone_number,
+                role: user.role,
+                username: user.username,
+                password : user.desencryptPassword()
+            }
+        });
+        
+        return res.status(200).json({Users});
+
+    } catch (error) {
+        debug("Error in getAllUsers", error);
+
+    }
+}
+
+controller.deleteUser = async(req,res,next)=>{
+    try {
+        const {id} = req.params;
+        let user =  await User.findByIdAndDelete(id);
+        if(!user){
+            return res.status(404).json({error:"User not found"});
+        }
+
+        return res.status(200).json({message:"User deleted successfully"});
+    } catch (error) {
+        
+    }
+}
+
 
 module.exports = controller;
