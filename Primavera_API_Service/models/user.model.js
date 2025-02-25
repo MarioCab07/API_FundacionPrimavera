@@ -51,7 +51,9 @@ const userSchema = new Schema({
 userSchema.methods = {
 
     encryptPassword : function (){
-        const password = crypto.randomBytes(8).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+        let password = crypto.randomBytes(8).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+        const _n = Math.floor(Math.random() * 90) + 10;
+        password += _n;
 
         try {
             const iv = crypto.randomBytes(16);
@@ -73,6 +75,7 @@ userSchema.methods = {
             decipher.setAuthTag(Buffer.from(authTag,'hex'));
             let decrypted = decipher.update(encrypted,'hex','utf8');
             decrypted += decipher.final('utf8');
+            
             return decrypted;
         } catch (error) {
             debug("Error in desencryptPassword", error);
