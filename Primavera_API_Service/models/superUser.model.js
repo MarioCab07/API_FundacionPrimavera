@@ -2,6 +2,7 @@ const Mongoose =require('mongoose');
 const { Schema } = Mongoose;
 const crypto =require('crypto');
 const debug = require('debug')('app:superUserModel');
+const {ROLES} = require('../data/roles.data')
 
 
 
@@ -35,9 +36,9 @@ const superUserSchema = new Schema({
         required: true
     },
 
-    role:{
+    role: {
         type: String,
-        default: 'superUser'
+        default: 'SUPER_ADMIN'
     },
     tokens:{
         type: [String],
@@ -78,7 +79,7 @@ superUserSchema
     .virtual('password')
     .set(function(password = crypto.randomBytes(16).toString('hex')){
         this.salt = this.makeSalt();
-        this.hashedPassword
+        this.hashedPassword = this.encryptPassword(password);
 });
 
 module.exports =  Mongoose.model('SuperUser', superUserSchema);

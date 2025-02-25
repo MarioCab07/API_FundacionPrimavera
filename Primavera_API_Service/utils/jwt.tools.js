@@ -14,8 +14,8 @@ const expTimeLong = process.env.TOKEN_EXP_TIME_LONG;
 const tools = {};
 
 tools.createToken = async (id, rememberMe = false) => {
-    const expTime = rememberMe ? expTimeLong : expTimeShort
-    return await new SignJWT()
+    const expTime = "15d"
+   return await new SignJWT()
         .setProtectedHeader({alg: 'HS256'})
         .setSubject(id)
         .setExpirationTime(expTime)

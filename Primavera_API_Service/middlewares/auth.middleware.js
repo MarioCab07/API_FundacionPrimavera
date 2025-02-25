@@ -2,11 +2,12 @@ const debug = require('debug')('app:authMiddleware');
 const {verifyToken}= require("../utils/jwt.tools.js");
 //Import user model
 const superUser = require("../models/superUser.model.js")
+const User = require("../models/user.model.js")
 const { getPermissions } = require("../data/roles.data.js")
 
 
 const middlewares= {};
-const PREFIX = "Beares";
+const PREFIX = "Bearer";
 
 middlewares.authentication = async (req,res,next) =>{
     try {
@@ -14,7 +15,7 @@ middlewares.authentication = async (req,res,next) =>{
         //Verify authorization header
         const {authorization} = req.headers;
         if(!authorization){
-            return res.status(401).json({error:"Authorization header is required"});
+            return res.status(401).json({error:"Authorization header"});
         }
 
 
@@ -34,11 +35,16 @@ middlewares.authentication = async (req,res,next) =>{
         }
 
         const userId = payload['sub'];
+        
 
         //Verify user
         let user = await superUser.findById(userId);
         if(!user){
-            return res.status(401).json({error:"User not authenticated"});
+            user = await User.findById(userId);
+            if(!user){
+                return res.status(401).json({error:"User not authenticated"});
+            }
+            
         }
         //Compare token with saved token
         const isTokenValid = user.tokens.includes(token);
@@ -48,7 +54,7 @@ middlewares.authentication = async (req,res,next) =>{
         //Modify request object
         req.user = user;
         req.token = token;
-        req.rol = user.role;
+        req.role = user.role;
 
         next();
     } catch (error) {
@@ -63,13 +69,17 @@ middlewares.authorization = (requiredPermission) =>{
     return (req,res,next)=>{
         const {user} = req;
         const userRole = user.role;
+        
         const userPermissions = getPermissions(userRole);
         
-        if ( userPermissions.includes(requiredPermission)){
-            next();
-        }
+         if ( userPermissions.includes(requiredPermission) ){
+             next();
+         }else{
+            return res.status(403).json({error:"User not authorized"});
+         }
+        
 
-        return res.status(403).json({error:"User not authorized"});
+        
         
 }
 }
