@@ -2,11 +2,8 @@ const Moongose =require('mongoose')  ;
 const debug =require('debug')('app:database');
 
 
-const dbHost = process.env.DB_HOST ; 
-const dbPort = process.env.DB_PORT ;
-const dbName = process.env.DB_NAME ;
 
-const dbURI = process.env.DB_URI || "mongodb+srv://MarioCab07:D554B8F8mcd@cluster0.71oqw.mongodb.net/" ;
+const dbURI = process.env.DB_URI ;
 
 /*
     Database connection method
