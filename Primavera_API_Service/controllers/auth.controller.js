@@ -1,6 +1,5 @@
 const superUser = require ('../models/superUser.model.js');
 const User = require ('../models/user.model.js');
-//const User = import()
 const tools =  require( "../utils/jwt.tools.js")
 const debug = require('debug')('app:server') ;
 
@@ -46,10 +45,13 @@ controller.Login = async(req,res,next)=>{
         //TODO: Add rememberMe
         const {username, password} = req.body;
         
+        if(typeof username !== "string" || typeof password !== "string"){
+            return res.status(400).json({error:"Invalid data"});
+        }
 
         //Verify if is User
         let user = await User.findOne({username:username});
-        debug(username)
+        
 
         if(!user){
             //Verify if is SuperUser
@@ -91,7 +93,7 @@ controller.Login = async(req,res,next)=>{
         
         
 
-       debug("Creacion usuartio");
+       
         
         await user.save();
         // Return Token

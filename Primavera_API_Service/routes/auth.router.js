@@ -3,7 +3,7 @@ const router = express.Router();
 
 const authController  = require ('../controllers/auth.controller.js');
 const authValidator  = require ('../validators/auth.validator.js');
-const validateFields  = require ('../validators/index.middleware.js');
+const validateFields  = require ('../middlewares/index.middleware.js');
 const {authentication,authorization} = require("../middlewares/auth.middleware.js")
 
 const superUserKey = process.env.Super_User_Key;
