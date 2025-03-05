@@ -354,7 +354,7 @@ controller.deleteDocument = async (req,res,next)=>{
             return res.status(404).json({error:"File not found"});
         }
 
-        debug(filePath);
+        
         if (await fs.pathExists(filePath)) {
             await fs.remove(filePath);
           }
