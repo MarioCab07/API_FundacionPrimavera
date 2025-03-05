@@ -40,7 +40,7 @@ const upload = multer({
     if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error('Solo se permiten imágenes y archivos PDF'));
+      cb(new Error('Only image and PDF files are allowed!'), false);
     }
   }
 });
