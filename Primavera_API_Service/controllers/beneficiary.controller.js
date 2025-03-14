@@ -40,7 +40,8 @@ controller.createBeneficiary = async (req,res,next) =>{
             affiliation,
             dependents,
             active,
-            reason
+            reason,
+            gender
         } = req.body;
 
 
@@ -92,7 +93,8 @@ controller.createBeneficiary = async (req,res,next) =>{
             affiliation : affiliation,
             dependents : dependents,
             active : isActive,
-            age:age
+            age:age,
+            gender:gender
 
         });
 
