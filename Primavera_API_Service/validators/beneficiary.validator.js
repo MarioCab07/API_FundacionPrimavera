@@ -28,7 +28,7 @@ validator.beneficiaryRegisterValidator = [
     body('weight')
         .notEmpty().withMessage('Weight is required')
         .isNumeric().withMessage('Weight must be a number'),
-    body('height')
+body('height')
         .notEmpty().withMessage('Height is required')
         .isNumeric().withMessage('Height must be a number'),
     body('whatsapp')
@@ -44,6 +44,7 @@ validator.beneficiaryRegisterValidator = [
         .notEmpty().withMessage('Blood type is required'),
     body('starting_date')
         .notEmpty().withMessage('Start date is required'),
+    body('gender').notEmpty().withMessage("Gender is required")
     
 
 ]

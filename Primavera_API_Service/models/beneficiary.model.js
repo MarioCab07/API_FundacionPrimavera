@@ -142,6 +142,11 @@ const beneficiarySchema = new Schema({
     age:{
         type: Number,
         default:0
+    },
+    gender:{
+        type: String,
+        trim:true,
+        required:true
     }
 
 
