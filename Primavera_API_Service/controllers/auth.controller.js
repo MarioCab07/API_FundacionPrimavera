@@ -199,8 +199,8 @@ controller.getAllUsers = async(req,res,next)=>{
 
 controller.deleteUser = async(req,res,next)=>{
     try {
-        const {id} = req.params;
-        let user =  await User.findByIdAndDelete(id);
+        const {identifier} = req.params;
+        let user =  await User.findOneAndDelete({$or:[{dui:identifier},{_id:identifier}]});
         if(!user){
             return res.status(404).json({error:"User not found"});
         }
