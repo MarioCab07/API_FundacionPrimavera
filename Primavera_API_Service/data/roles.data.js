@@ -4,7 +4,8 @@ const ROLES = {
     COLABORADOR : {level : 2 , permissions: ['modify_inventory', 'read_volunteers']},
     GERENTE : {level : 3 , permissions : ['read_beneficiaries', 'modify_volunteers','read_stadistics']},
     ADMIN : {level: 4 , permissions : ['modify_beneficiaries']},
-    SUPER_ADMIN : {level : 5 , permissions : ['modify_users']}
+    SUPER_ADMIN : {level : 5 , permissions : ['modify_users', 'read_petitions'
+    ]}
 }
 
 //Function to get the role level

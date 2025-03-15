@@ -1,5 +1,6 @@
 const Volunteer = require('../models/volunteer.model');
 const User = require('../models/user.model');
+const Petition = require('../models/petition.model')
 const debug = require('debug')('app:volunteerController');
 
 const controller = {};
@@ -31,6 +32,20 @@ controller.createVolunteer = async(req,res,next)=>{
         });
 
         await volunteer.save();
+
+        const associateUser = await User.findOne({dui:dui});
+        
+        if(!associateUser){
+            const petition = new Petition({
+                volunteerId:volunteer._id,
+                action:"createUser",
+                status:"pending",
+                details:`El voluntario ${volunteer.name} fue creado. ¿Desea crear un usuario asociado?`
+            });
+
+            await petition.save();
+        }
+        
 
         return res.status(201).json({message:"Volunteer created successfully"});
     } catch (error) {
@@ -101,11 +116,28 @@ controller.deleteVolunteer = async(req,res,next)=>{
     try {
         const {identifier} = req.params;
         let volunteer = await Volunteer.findByIdAndDelete(identifier);
+        const {dui} = volunteer;
         if(!volunteer){
             return res.status(404).json({error:"Volunteer not found"});
         }
 
-       
+        const associatedUser = await User.findOne({dui:dui});
+        if(associatedUser){
+            const petition = new Petition({
+                volunteerId:volunteer._id,
+                userId:associatedUser._id,
+                action:"deleteUser",
+                status:"pending",
+                details:`El voluntario ${volunteer.name} fue eliminado. ¿Desea eliminar también el usuario asociado?`,
+                dui:dui
+            });
+
+            await petition.save();
+        }
+
+        
+
+    
 
         return res.status(200).json({message:"Volunteer deleted successfully"});
     } catch (error) {
@@ -113,6 +145,26 @@ controller.deleteVolunteer = async(req,res,next)=>{
     }
 }
 
+controller.deleteVolunteerUser = async(req,res,next)=>{
+    try {
+        const {identifier} = req.params;
+        let volunteer = await Volunteer.findByIdAndDelete(identifier);
+        if(!volunteer){
+            return res.status(404).json({error:"Volunteer not found"}); 
+        }
+        const {dui} = volunteer;
+        const associatedUser = await User.findOne({dui:dui});
+        if(associatedUser){
+            await User.findByIdAndDelete(associatedUser._id);
+        }
+
+        return res.status(200).json({message:"Volunteer and associated user deleted successfully"});
+
+
+    } catch (error) {
+        
+    }
+}
 
 controller.createVolunteerUser = async(req,res,next)=>{
     try {
