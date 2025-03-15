@@ -2,7 +2,7 @@ const debug = require('debug')('app:roles.data');
 const ROLES = {
     VOLUNTARIO : {level : 1 , permissions : ['read_inventory']},
     COLABORADOR : {level : 2 , permissions: ['modify_inventory', 'read_volunteers']},
-    GERENTE : {level : 3 , permissions : ['read_beneficiaries', 'modify_volunteers','read_stadistics']},
+    GERENTE : {level : 3 , permissions : ['read_beneficiaries', 'modify_volunteers','read_stats']},
     ADMIN : {level: 4 , permissions : ['modify_beneficiaries']},
     SUPER_ADMIN : {level : 5 , permissions : ['modify_users', 'read_petitions'
     ]}
