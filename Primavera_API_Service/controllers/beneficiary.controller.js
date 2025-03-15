@@ -61,7 +61,7 @@ controller.createBeneficiary = async (req,res,next) =>{
         }
 
         const isActive = {
-            active:active,
+            value:active,
             reason:reason
 
         }
