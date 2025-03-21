@@ -7,24 +7,21 @@ const { getPermissions } = require("../data/roles.data.js")
 
 
 const middlewares= {};
-const PREFIX = "Bearer";
+
 
 middlewares.authentication = async (req,res,next) =>{
     try {
         
         //Verify authorization header
-        const {authorization} = req.headers;
-        if(!authorization){
+        const {token} = req.cookies;
+        
+        if(!token){
             return res.status(401).json({error:"Authorization header"});
         }
 
 
         //Verify token
-        const [prefix,token] = authorization.split(" ");
-
-        if(prefix !== PREFIX){
-            return res.status(401).json({error:"User not authenticated"});
-        }
+  
         if(!token){
             return res.status(401).json({error:"User not authenticated"});
         }

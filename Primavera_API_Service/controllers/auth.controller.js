@@ -85,11 +85,12 @@ controller.Login = async(req,res,next)=>{
         _tokens = [token,..._tokens];
         user.tokens = _tokens;
         
-            // res.cookie("token", token, {
-            //     httpOnly: true,
-            //     secure: process.env.NODE_ENV === "production",
-            //     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días o 15 min
-            // });
+            res.cookie("token", token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "Strict",
+                maxAge:  24 * 60 * 60 * 1000 // 1 day
+            });
         
         
 
@@ -98,7 +99,7 @@ controller.Login = async(req,res,next)=>{
         await user.save();
         // Return Token
 
-        return res.status(200).json({token:token,name:user.name,username:user.username});
+        return res.status(200).json({name:user.name,username:user.username});
 
         
 
@@ -214,12 +215,52 @@ controller.deleteUser = async(req,res,next)=>{
 controller.whoAmi = async(req,res,next)=>{
     try {
         const user = req.user;
-        debug(user);
-        return res.status(200).json({name:user.name,username:user.username,email:user.email});
+        if(!user) return res.status(401).json({error:"User not authenticated"});
+        return res.status(200).json({name:user.name,username:user.username,role:user.role});
     } catch (error) {
         
     }
 }
 
+controller.logout = async (req, res, next) => {
+    try {
+        const { token } = req.cookies;
+
+        if (!token) {
+            return res.status(401).json({ error: "No token provided" });
+        }
+
+        const payload = await tools.verifyToken(token);
+        if (!payload) {
+            return res.status(401).json({ error: "Invalid token" });
+        }
+
+        const userId = payload['sub'];
+
+        // Find the user and remove the token
+        let user = await User.findById(userId);
+        if (!user) {
+            user = await superUser.findById(userId);
+            if (!user) {
+                return res.status(404).json({ error: "User not found" });
+            }
+        }
+
+        user.tokens = user.tokens.filter((t) => t !== token);
+        await user.save();
+
+        // Clear the cookie
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+        });
+
+        return res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+        debug("Error in logout", error);
+        next(error);
+    }
+};
 
 module.exports = controller;
