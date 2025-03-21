@@ -198,7 +198,7 @@ controller.updateBeneficiary = async(req,res,next)=>{
 
         const {identifier} = req.params;
 
-        let beneficiary = await Beneficiary.findById(id);
+        let beneficiary = await Beneficiary.findById(identifier);
         if(!beneficiary){
             return res.status(404).json({error:"Beneficiary not found"});
         }
