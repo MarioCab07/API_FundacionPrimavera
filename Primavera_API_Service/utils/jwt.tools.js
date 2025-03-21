@@ -15,7 +15,7 @@ const tools = {};
 
 tools.createToken = async (id, rememberMe = false) => {
     const expTime = "15d"
-   return await new SignJWT()
+   return await new SignJWT({id,role})
         .setProtectedHeader({alg: 'HS256'})
         .setSubject(id)
         .setExpirationTime(expTime)

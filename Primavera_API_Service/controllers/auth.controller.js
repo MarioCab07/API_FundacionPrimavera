@@ -68,7 +68,7 @@ controller.Login = async(req,res,next)=>{
         }
 
         //Create Token
-        const token = await tools.createToken(user._id);
+        const token = await tools.createToken(user._id,user.role);
 
         //Save Token
         //Check Tokens lifetime - max 5 tokens
@@ -206,6 +206,16 @@ controller.deleteUser = async(req,res,next)=>{
         }
 
         return res.status(200).json({message:"User deleted successfully"});
+    } catch (error) {
+        
+    }
+}
+
+controller.whoAmi = async(req,res,next)=>{
+    try {
+        const user = req.user;
+        debug(user);
+        return res.status(200).json({name:user.name,username:user.username,email:user.email});
     } catch (error) {
         
     }
