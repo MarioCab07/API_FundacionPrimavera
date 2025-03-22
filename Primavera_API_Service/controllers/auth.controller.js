@@ -99,7 +99,7 @@ controller.Login = async(req,res,next)=>{
         await user.save();
         // Return Token
 
-        return res.status(200).json({name:user.name,username:user.username});
+        return res.status(200).json({name:user.name,username:user.username,role:user.role});
 
         
 

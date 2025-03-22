@@ -6,8 +6,12 @@ const controller = {};
 controller.getPetitions = async(req,res,next)=>{
     try {
         const {status = 'pending'} = req.query;
+        let {page =1, limit = 6 } = req.query;
+        page = parseInt(page);
+        limit = parseInt(limit);
 
-        const petitions = await Petition.find({status:status}).populate({path:'userId',select:'name username dui'}).populate({path:'volunteerId',select:'name username dui'});
+        const petitions = await Petition.find({status:status}).populate({path:'userId',select:'name username dui'}).populate({path:'volunteerId',select:'name username dui'}).skip((page-1)*limit)
+        .limit(parseInt(limit));
         return res.status(200).json(petitions);
     } catch (error) {
         
