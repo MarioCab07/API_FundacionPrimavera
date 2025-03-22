@@ -3,6 +3,7 @@ const path = require ('path');
 const cookieParser = require ('cookie-parser');
 const logger = require ('morgan');
 const mongoSanitize = require ('express-mongo-sanitize');
+const cors = require ('cors');
 
 
 const database = require ('./config/database.config.js');
@@ -17,6 +18,12 @@ const apiRouter = require ('./routes/index.router.js');
 const app = express();
 
 app.use(mongoSanitize());
+app.use(cors({
+    origin: 'http://localhost:5173',
+    methods: 'GET,POST,PUT,DELETE,PATCH',
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+}))
 
 //Database connection
 database.connect();
