@@ -8,10 +8,10 @@ validator.beneficiaryRegisterValidator = [
         .isLength({min:3 , max:32}).withMessage('Name must be between 3 and 32 characters long'),
     body('dui')
         .notEmpty().withMessage('DUI is required')
-        .isLength({min:9 , max:9}).withMessage('DUI must be 9 characters long'),
+        .isLength({min:10 , max:10}).withMessage('DUI must be 10 characters long'),
     body('phone_number')
         .notEmpty().withMessage('Phone number is required')
-        .isLength({min:8 }).withMessage('Phone number must be 8 characters long'),
+        .isLength({min:9 }).withMessage('Phone number must be 9 characters long'),
     body('adress')
         .notEmpty().withMessage('Adress is required'),
     body('birth_place')
