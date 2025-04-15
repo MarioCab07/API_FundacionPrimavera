@@ -8,19 +8,8 @@ const debug = require('debug')('app:ben-middleware');
 const storage = multer.diskStorage({
   destination: async function(req, file, cb) {
     try {
-      let foldername = sanitizeName(req.body.name);
-
       
-      let basePath;
-      
-      if (file.mimetype === 'application/pdf') {
-        basePath = path.join('uploads', 'beneficiaries', foldername, 'documents');
-      } else {
-        basePath = path.join('uploads', 'beneficiaries', foldername);
-      }
-      
-      await fs.ensureDir(basePath);
-      cb(null, basePath);
+      cb(null, 'temp/');
     } catch (error) {
       cb(error, null);
     }
