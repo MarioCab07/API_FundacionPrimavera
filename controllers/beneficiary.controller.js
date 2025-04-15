@@ -3,7 +3,7 @@ const path = require('path');
 
 const Beneficiary = require('../models/beneficiary.model');
 const debug = require('debug')('app:ben controller');
-
+import { sanitizeName } from '../utils/general.tools';
 
 
 const controller ={};
@@ -11,6 +11,8 @@ const controller ={};
 
 controller.createBeneficiary = async (req,res,next) =>{
     try {
+
+       
         const {
             name,
             dui,
@@ -44,6 +46,7 @@ controller.createBeneficiary = async (req,res,next) =>{
             gender
         } = req.body;
 
+        let foldername = sanitizeName(name);
 
         const age = new Date().getFullYear() - new Date(birth_date).getFullYear();
 
@@ -99,7 +102,13 @@ controller.createBeneficiary = async (req,res,next) =>{
         });
 
         if (req.file) {
-            beneficiary.photo = req.file.path;
+            const ext = path.extname(req.file.originalname);
+            const benFolder = path.join('uploads', 'beneficiaries', foldername);
+            const finalPath = path.join(benFolder, `photo${ext}`);
+            await fs.ensureDir(benFolder);
+            await fs.move(req.file.path, finalPath, { overwrite: true });
+            beneficiary.photo = finalPath;
+             
           }
 
         await beneficiary.save();
