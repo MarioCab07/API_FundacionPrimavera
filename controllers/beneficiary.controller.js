@@ -3,7 +3,7 @@ const path = require('path');
 
 const Beneficiary = require('../models/beneficiary.model');
 const debug = require('debug')('app:ben controller');
-import { sanitizeName } from '../utils/general.tools';
+const {sanitizeName} = require('../utils/general.tools');
 
 
 const controller ={};
