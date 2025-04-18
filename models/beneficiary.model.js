@@ -132,7 +132,22 @@ const beneficiarySchema = new Schema({
         default:[]
     },
     files:{
-        type:[String],
+        type:[{
+            name:{
+                type: String,
+                required: true,
+                trim: true
+            },
+            url:{
+                type: String,
+                required: true,
+                trim: true
+            },
+            date:{
+                type: Date,
+                default: Date.now()
+            }
+        }],
         default:[]
     },
     active: {
