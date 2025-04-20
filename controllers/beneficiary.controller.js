@@ -133,7 +133,7 @@ controller.getAllBeneficieries = async(req,res,next)=>{
                                     .skip((page-1)*limit)
                                     .limit(parseInt(limit));
 
-        const total = await Beneficiary.countDocuments();
+        const total = await Beneficiary.countDocuments({'active.value': true});
 
         return res.status(200).json({beneficiaries,total,page,pages:Math.ceil(total/limit)});
     } catch (error) {
@@ -151,7 +151,7 @@ controller.getInactiveBeneficiaries = async(req,res,next)=>{
                                     .skip((page-1)*limit)
                                     .limit(parseInt(limit));
 
-        const total = await Beneficiary.countDocuments();
+        const total = await Beneficiary.countDocuments({ 'active.value': false });
         return res.status(200).json({beneficiaries,total,page,pages:Math.ceil(total/limit)});
     } catch (error) {
         
