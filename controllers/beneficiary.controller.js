@@ -163,7 +163,7 @@ controller.findBeneciary = async(req,res,next)=>{
         const {identifier} = req.params;
         const decodeId = decodeURIComponent(identifier);
         
-        const beneficiary = await Beneficiary.findOne({$or:[{dui:decodeId},{name:decodeId}]});
+        const beneficiary = await Beneficiary.findOne({$or:[{dui:decodeId},{name:decodeId}],'active.value':true});
         
         if(!beneficiary){
             return res.status(404).json({error:"Beneficiary not found"});
