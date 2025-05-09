@@ -8,25 +8,16 @@ const debug = require('debug')('app:ben-middleware');
 const storage = multer.diskStorage({
   destination: async function(req, file, cb) {
     try {
-      let foldername = sanitizeName(req.body.name);
-
-      
-      let basePath;
-      
-      if (file.mimetype === 'application/pdf') {
-        basePath = path.join('uploads', 'beneficiaries', foldername, 'documents');
-      } else {
-        basePath = path.join('uploads', 'beneficiaries', foldername);
-      }
-      
-      await fs.ensureDir(basePath);
-      cb(null, basePath);
+      const tempPath = path.join(__dirname, '../temp');
+      await fs.ensureDir(tempPath); // Ensure the directory exists
+      cb(null, tempPath);
     } catch (error) {
       cb(error, null);
     }
   },
   filename: function(req, file, cb) {
     if (file.mimetype === 'application/pdf') {
+
       cb(null, file.originalname);
     } else {
       cb(null, 'photo' + path.extname(file.originalname));
@@ -35,6 +26,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
+  limit: { fileSize: 25 * 1024 * 1024 }, // 25 MB
   storage: storage,
   fileFilter: function(req, file, cb) {
     if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {

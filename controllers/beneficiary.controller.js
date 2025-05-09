@@ -3,7 +3,7 @@ const path = require('path');
 
 const Beneficiary = require('../models/beneficiary.model');
 const debug = require('debug')('app:ben controller');
-
+const {sanitizeName} = require('../utils/general.tools');
 
 
 const controller ={};
@@ -11,6 +11,8 @@ const controller ={};
 
 controller.createBeneficiary = async (req,res,next) =>{
     try {
+
+       
         const {
             name,
             dui,
@@ -44,6 +46,7 @@ controller.createBeneficiary = async (req,res,next) =>{
             gender
         } = req.body;
 
+        let foldername = sanitizeName(name);
 
         const age = new Date().getFullYear() - new Date(birth_date).getFullYear();
 
@@ -99,7 +102,15 @@ controller.createBeneficiary = async (req,res,next) =>{
         });
 
         if (req.file) {
-            beneficiary.photo = req.file.path;
+            const ext = path.extname(req.file.originalname);
+            const benFolder = path.join('uploads', 'beneficiaries', foldername);
+            const finalPath = path.join(benFolder, `photo${ext}`);
+            await fs.ensureDir(benFolder);
+            await fs.move(req.file.path, finalPath, { overwrite: true });
+            const absolutePath = `${req.protocol}://${req.get('host')}/${finalPath.replace(/\\/g, '/')}`;
+
+            beneficiary.photo = absolutePath;
+             
           }
 
         await beneficiary.save();
@@ -122,7 +133,7 @@ controller.getAllBeneficieries = async(req,res,next)=>{
                                     .skip((page-1)*limit)
                                     .limit(parseInt(limit));
 
-        const total = await Beneficiary.countDocuments();
+        const total = await Beneficiary.countDocuments({'active.value': true});
 
         return res.status(200).json({beneficiaries,total,page,pages:Math.ceil(total/limit)});
     } catch (error) {
@@ -140,7 +151,7 @@ controller.getInactiveBeneficiaries = async(req,res,next)=>{
                                     .skip((page-1)*limit)
                                     .limit(parseInt(limit));
 
-        const total = await Beneficiary.countDocuments();
+        const total = await Beneficiary.countDocuments({ 'active.value': false });
         return res.status(200).json({beneficiaries,total,page,pages:Math.ceil(total/limit)});
     } catch (error) {
         
@@ -150,7 +161,10 @@ controller.getInactiveBeneficiaries = async(req,res,next)=>{
 controller.findBeneciary = async(req,res,next)=>{
     try {
         const {identifier} = req.params;
-        const beneficiary = await Beneficiary.findOne({$or:[{dui:identifier},{name:identifier},{_id:identifier}]});
+        const decodeId = decodeURIComponent(identifier);
+        
+        const beneficiary = await Beneficiary.findOne({$or:[{dui:decodeId},{name:decodeId}],'active.value':true});
+        
         if(!beneficiary){
             return res.status(404).json({error:"Beneficiary not found"});
         }
@@ -209,11 +223,7 @@ controller.updateBeneficiary = async(req,res,next)=>{
             dui:personIC_dui
         }
 
-        const isActive = {
-            active:active,
-            reason:reason
-
-        }
+        
 
         beneficiary.name = name;
         beneficiary.dui = dui;
@@ -240,11 +250,12 @@ controller.updateBeneficiary = async(req,res,next)=>{
         beneficiary.discapacities = discapacities;
         beneficiary.affiliation = affiliation;
         beneficiary.dependents = dependents;
-        beneficiary.active = isActive;
+        beneficiary.active.value = true;
+        beneficiary.active.reason = reason;
 
         await beneficiary.save();
 
-        return res.status(200).json({message:"Beneficiary updated successfully"});
+        return res.status(200).json({message:"Beneficiary updated successfully",beneficiary});
 
     } catch (error) {
         
@@ -287,10 +298,11 @@ controller.getPhoto = async(req,res,next)=>{
             return res.status(404).json({error:"Beneficiary has no photo"});
         }
 
-        return res.sendFile(path.resolve(beneficiary.photo));
-
-    } catch (error) {
+        const photoUrl = `http://localhost:8008/${beneficiary.photo}`;
+        return res.status(200).json({photo:photoUrl});
         
+    } catch (error) {
+        res.status(500).json({ error: "Error retrieving photo" });
     }
 }
 
@@ -302,21 +314,44 @@ controller.uploadDocument = async(req,res,next)=>{
             return res.status(404).json({error:"Beneficiary not found"});
         }
 
-        if(!req.files){
+        const folderName = sanitizeName(beneficiary.name);
+
+        if(!req.files || req.files.length === 0){
             return res.status(400).json({error:"No file was uploaded"});
         }
 
-        const _paths = req.files.map(file=>file.path);
-        beneficiary.files = _paths;
+        const uploadedFiles = [];
+
+        for (const file of req.files){
+
+            const ext = path.extname(file.originalname);
+            const fileName = `${path.basename(file.originalname, ext)}${ext}`;
+            const benFolder = path.join('uploads', 'beneficiaries', folderName,'documents');
+            const finalPath = path.join(benFolder, fileName);
+
+            await fs.ensureDir(benFolder);
+            await fs.move(file.path, finalPath, { overwrite: true });
+
+            const fileUrl = `${req.protocol}://${req.get('host')}/${finalPath.replace(/\\/g, '/')}`;
+            uploadedFiles.push({
+                name:fileName,
+                url:fileUrl,
+                date:Date.now()
+            });
+
+        }
+
+        beneficiary.files.push(...uploadedFiles);
+        await beneficiary.save();
         
-        await beneficiary.save();        
+                
         
-        return res.status(200).json({message:"Document uploaded successfully"});
+        return res.status(200).json({message:"Document uploaded successfully",newFiles:beneficiary.files});
 
 
 
     } catch (error) {
-        
+        res.status(500).json({ error });
     }
 }
 
@@ -341,34 +376,37 @@ controller.getBeneficiaryDocuments = async(req,res,next)=>{
     }
 }
 
+
+
 controller.deleteDocument = async (req,res,next)=>{
     try {
         const {identifier} = req.params;
-        const {fileName} = req.body;
+        let {fileName} = req.body;
+        fileName = fileName;
 
         const beneficiary = await Beneficiary.findById(identifier);
         if(!beneficiary){
             return res.status(404).json({error:"Beneficiary not found"});
         }
 
-        const filePath = beneficiary.files.find(file=>file.includes(fileName));
+        const filePath = beneficiary.files.find(file=>file.name === fileName);
         if(!filePath){
             return res.status(404).json({error:"File not found"});
         }
 
         
-        if (await fs.pathExists(filePath)) {
-            await fs.remove(filePath);
+        if (await fs.pathExists(filePath.url)) {
+            await fs.remove(filePath.url);
           }
         
-        beneficiary.files = beneficiary.files.filter(file=>!file.includes(fileName));
-        await beneficiary.save();
+          beneficiary.files = beneficiary.files.filter((file) => file.name !== fileName);
+          await beneficiary.save();
 
         
 
         return res.status(200).json({message:"Document deleted successfully"});
     } catch (error) {
-        
+        return res.status(500).json({ error});
     }
 }
 
