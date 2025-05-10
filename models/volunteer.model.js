@@ -52,7 +52,7 @@ const volunteerSchema = new Schema({
     },
     userName:{
         type: String,
-        default: ""
+        default: "NA"
     },
     active:{
         type: Boolean,
