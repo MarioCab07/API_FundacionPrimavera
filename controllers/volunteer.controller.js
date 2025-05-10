@@ -197,9 +197,11 @@ controller.createVolunteerUser = async(req,res,next)=>{
         newUser.encryptPassword();
         const password = newUser.desencryptPassword();
         newUser.generateUser();
+        volunteer.userName = newUser.username;
 
         
         await newUser.save();
+        await volunteer.save();
 
         return res.status(201).json({message:"User created successfully",username:newUser.username,password:password});
 
