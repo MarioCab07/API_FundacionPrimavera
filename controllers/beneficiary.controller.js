@@ -4,7 +4,10 @@ const path = require('path');
 const Beneficiary = require('../models/beneficiary.model');
 const debug = require('debug')('app:ben controller');
 const {sanitizeName} = require('../utils/general.tools');
+const {AsyncParser}  = require("@json2csv/node")
 
+const { default: mongoose } = require('mongoose');
+const { log } = require('console');
 
 const controller ={};
 
@@ -407,6 +410,61 @@ controller.deleteDocument = async (req,res,next)=>{
         return res.status(200).json({message:"Document deleted successfully"});
     } catch (error) {
         return res.status(500).json({ error});
+    }
+}
+
+controller.generateCSV = async(req,res,next)=>{
+    try {
+        
+
+        const {duiList=[],getAll="1"} = req.body;
+        let data=[{}];
+        
+        
+        
+         if(String(getAll)==="1") {
+            
+            
+            data = await Beneficiary.find({ 'active.value': true })
+        }
+        else{
+            
+            data = await Promise.all(
+                duiList.map(async (dui) => {
+                    const beneficiary = await Beneficiary.findOne({dui:dui,'active.value':true});
+                    
+                    return beneficiary;
+                })
+            );
+
+            
+        }
+
+
+        const fields = [
+            {label: "Nombre",value:"name"},
+            {label:"DUI", value:"dui"},
+            {label:"Edad", value:"age"},
+            {label:"Sexo", value:"gender"},
+            {label:"Telefono", value:"phone_number"}
+        ];
+
+        const parser = new AsyncParser({fields});
+        const csvStream = parser.parse(data);
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=beneficiarios.csv');
+        csvStream.pipe(res);
+        
+//return res.status(200).json({message:"CSV generated successfully"});
+    
+    } catch (error) {
+        
+        
+        
+        res.status(500).json({ error
+});
+
     }
 }
 

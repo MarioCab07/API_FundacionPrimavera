@@ -42,6 +42,8 @@ router.get('/read/document/:identifier',authentication,authorization('read_benef
 //Get Inactive Beneficiaries
 router.get('/inactive',authentication,authorization('read_beneficiaries'),beneficiaryController.getInactiveBeneficiaries);
 
+//GetCSV
+router.get('/csv',authentication,authorization('read_beneficiaries'),beneficiaryController.generateCSV);
 
 
 // POST ROUTES

@@ -28,6 +28,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@json2csv/formatters@npm:^7.0.6":
+  version: 7.0.6
+  resolution: "@json2csv/formatters@npm:7.0.6"
+  checksum: 10c0/725d64c2ce874e330be8344df59b32a68854c61c79e5a9656a9a3863b0e0ec278cfff90acac99d8970cb0ea2f50be81e27bf9e6a1e4021b25ba62b540452a4aa
+  languageName: node
+  linkType: hard
+
+"@json2csv/node@npm:^7.0.6":
+  version: 7.0.6
+  resolution: "@json2csv/node@npm:7.0.6"
+  dependencies:
+    "@json2csv/plainjs": "npm:^7.0.6"
+  checksum: 10c0/1136a2762a0f8826ca47bf5c461236fe8411d659d94c5efc9c49983a1579dea70efe52ca57e7783ef8a0c5fcd1dee70b3a0ffe95214c9d93b252d3ca720241c8
+  languageName: node
+  linkType: hard
+
+"@json2csv/plainjs@npm:^7.0.6":
+  version: 7.0.6
+  resolution: "@json2csv/plainjs@npm:7.0.6"
+  dependencies:
+    "@json2csv/formatters": "npm:^7.0.6"
+    "@streamparser/json": "npm:^0.0.20"
+  checksum: 10c0/46b8c581f24f6a738884bdf42552797413e3faf27460b6725879cc12d0bcc922be152fd36d2272b1d3cdb9055bdb41680bec90088b9babd4b0ef58fcfc907425
+  languageName: node
+  linkType: hard
+
 "@mongodb-js/saslprep@npm:^1.1.9":
   version: 1.2.0
   resolution: "@mongodb-js/saslprep@npm:1.2.0"
@@ -63,6 +89,13 @@ __metadata:
   version: 0.11.0
   resolution: "@pkgjs/parseargs@npm:0.11.0"
   checksum: 10c0/5bd7576bb1b38a47a7fc7b51ac9f38748e772beebc56200450c4a817d712232b8f1d3ef70532c80840243c657d491cf6a6be1e3a214cff907645819fdc34aadd
+  languageName: node
+  linkType: hard
+
+"@streamparser/json@npm:^0.0.20":
+  version: 0.0.20
+  resolution: "@streamparser/json@npm:0.0.20"
+  checksum: 10c0/c6a630a30aec50431e598d3e6652dcfe3df8c6ec8bda5e6563f7df9b7308f269824e236fde48747324b3b0060393ba6e98fbb6a9ad4614a757ef9da170c84b44
   languageName: node
   linkType: hard
 
@@ -1418,6 +1451,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "primavera-api-service@workspace:."
   dependencies:
+    "@json2csv/node": "npm:^7.0.6"
     cookie-parser: "npm:~1.4.4"
     cors: "npm:^2.8.5"
     debug: "npm:~2.6.9"
