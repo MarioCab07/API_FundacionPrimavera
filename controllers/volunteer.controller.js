@@ -69,13 +69,16 @@ controller.findVolunteer = async(req,res,next)=>{
 
 controller.getAllVolunteers = async(req,res,next)=>{
     try {
-        const {page=1, limit=6, active=true} = req.query;
-        const volunteers = await Volunteer.find({active:active}).limit(limit * 1).skip((page - 1) * limit);
-        const count = await Volunteer.countDocuments();
+        let {page=1, limit=6, active=true} = req.query;
+        page = parseInt(page);
+        limit = parseInt(limit);
+        const volunteers = await Volunteer.find({active:active}).skip((page-1)*limit).limit(parseInt(limit));
+        const total = await Volunteer.countDocuments({active:active});
         return res.status(200).json({
             volunteers,
-            totalPages: Math.ceil(count/limit),
-            currentPage: page
+            total,
+            page,
+            pages: Math.ceil(total/limit)
         });
     } catch (error) {
         
