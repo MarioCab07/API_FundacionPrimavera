@@ -71,6 +71,7 @@ controller.createBeneficiary = async (req,res,next) =>{
             reason:reason
 
         }
+        let newDependentes = JSON.parse(dependents)
         
         beneficiary =  new Beneficiary({
             name : name,
@@ -97,7 +98,7 @@ controller.createBeneficiary = async (req,res,next) =>{
             shoe_size : shoe_size,
             discapacities : discapacities,
             affiliation : affiliation,
-            dependents : dependents,
+            dependents : newDependentes,
             active : isActive,
             age:age,
             gender:gender
