@@ -1,13 +1,13 @@
 const fs = require('fs-extra');
 const path = require('path');
+const bucket  = require('../config/firebase');
 
 const Beneficiary = require('../models/beneficiary.model');
 const debug = require('debug')('app:ben controller');
 const {sanitizeName} = require('../utils/general.tools');
 const {AsyncParser}  = require("@json2csv/node")
 
-const { default: mongoose } = require('mongoose');
-const { log } = require('console');
+
 
 const controller ={};
 
@@ -48,8 +48,9 @@ controller.createBeneficiary = async (req,res,next) =>{
             reason,
             gender
         } = req.body;
+        
 
-        let foldername = sanitizeName(name);
+        let foldername = `beneficiaries/${sanitizeName(name)}`;
 
         const age = new Date().getFullYear() - new Date(birth_date).getFullYear();
 
@@ -107,14 +108,17 @@ controller.createBeneficiary = async (req,res,next) =>{
 
         if (req.file) {
             const ext = path.extname(req.file.originalname);
-            const benFolder = path.join('uploads', 'beneficiaries', foldername);
-            const finalPath = path.join(benFolder, `photo${ext}`);
-            await fs.ensureDir(benFolder);
-            await fs.move(req.file.path, finalPath, { overwrite: true });
-            const absolutePath = `${req.protocol}://${req.get('host')}/${finalPath.replace(/\\/g, '/')}`;
+            const filename = `${foldername}/photo${ext}`;
+            const file = bucket.file(filename);
 
-            beneficiary.photo = absolutePath;
-             
+            await file.save(req.file.buffer,{
+                metadata:{
+                    contentType: req.file.mimetype
+                }
+            });
+
+            await file.makePublic();
+            beneficiary.photo = `https://storage.googleapis.com/${bucket.name}/${filename}`;
           }
 
         await beneficiary.save();
@@ -318,7 +322,7 @@ controller.uploadDocument = async(req,res,next)=>{
             return res.status(404).json({error:"Beneficiary not found"});
         }
 
-        const folderName = sanitizeName(beneficiary.name);
+        const folderName = `beneficiaries/${sanitizeName(beneficiary.name)}/documents`;
 
         if(!req.files || req.files.length === 0){
             return res.status(400).json({error:"No file was uploaded"});
@@ -329,23 +333,29 @@ controller.uploadDocument = async(req,res,next)=>{
         for (const file of req.files){
 
             const ext = path.extname(file.originalname);
-            const fileName = `${path.basename(file.originalname, ext)}${ext}`;
-            const benFolder = path.join('uploads', 'beneficiaries', folderName,'documents');
-            const finalPath = path.join(benFolder, fileName);
-
-            await fs.ensureDir(benFolder);
-            await fs.move(file.path, finalPath, { overwrite: true });
-
-            const fileUrl = `${req.protocol}://${req.get('host')}/${finalPath.replace(/\\/g, '/')}`;
-            uploadedFiles.push({
-                name:fileName,
-                url:fileUrl,
-                date:Date.now()
+            const baseName = path.basename(file.originalname, ext);
+            const fileName = `${folderName}/${baseName}${ext}`;
+            
+            const remoteFile = bucket.file(fileName);
+            await remoteFile.save(file.buffer, {
+                metadata: {
+                    contentType: file.mimetype
+                }
             });
 
+            await remoteFile.makePublic();
+
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+            const fileRecord = {
+                name: `${baseName}${ext}`,
+                url: publicUrl,
+                date: new Date()
+            };
+            uploadedFiles.push(fileRecord);
+            beneficiary.files.push(fileRecord);
         }
 
-        beneficiary.files.push(...uploadedFiles);
         await beneficiary.save();
         
                 
