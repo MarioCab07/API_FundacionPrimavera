@@ -15,8 +15,9 @@ const validateFields = require('../middlewares/index.middleware');
 const { authentication, authorization } = require('../middlewares/auth.middleware');
 //Validator
 const validator = require('../validators/beneficiary.validator');
-//Upload middleware
-const upload = require('../middlewares/beneficiary.middleware');
+//Upload 
+const uploadPhoto = require('../middlewares/uploadPhoto.middleware');
+const uploadDocs = require('../middlewares/uploadDocs.middleware');
 
 
 
@@ -52,12 +53,12 @@ router.get('/csv',authentication,authorization('read_beneficiaries'),beneficiary
 router.post('/create',
     authentication,
     authorization('modify_beneficiaries'),
-    upload.single('photo'),
+    uploadPhoto,
     validator.beneficiaryRegisterValidator,
     validateFields,
     beneficiaryController.createBeneficiary);
 
-router.post('/upload/document/:identifier',authentication,authorization('modify_beneficiaries'),upload.array('document',10),beneficiaryController.uploadDocument);
+router.post('/upload/document/:identifier',authentication,authorization('modify_beneficiaries'),uploadDocs,beneficiaryController.uploadDocument);
 
 
 // PUT ROUTES

@@ -15,6 +15,7 @@
     "express": "~4.16.1",
     "express-mongo-sanitize": "^2.2.0",
     "express-validator": "^7.2.1",
+    "firebase-admin": "^13.4.0",
     "fs-extra": "^11.3.0",
     "jose": "^6.0.6",
     "mongoose": "^8.10.1",
