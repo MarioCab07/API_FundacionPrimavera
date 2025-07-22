@@ -15,13 +15,16 @@ const superUserKey = process.env.Super_User_Key;
 router.post(`/superuser/register/${superUserKey}`,authValidator.sUserRegisterValidator,validateFields, authController.superUserRegister);
 
 //Login
-router.post(`/login`,authController.Login);
+router.post(`/login`,authController.login);
 
 //User Register
 router.post('/register',authentication,authorization('modify_users'),authValidator.userRegisterValidator,validateFields,authController.userRegister);
 
 //Logout
-router.post('/logout',authentication,authController.logout);
+router.post('/logout',authController.logout);
+
+//Refresh Token
+router.post('/refresh',authController.refresh);
 
 
 
