@@ -4,7 +4,7 @@ const tools =  require( "../utils/jwt.tools.js")
 const debug = require('debug')('app:server') ;
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
-const THIRTY_DAYS = 30 * ONE_DAY;
+const SEVEN_DAYS = 7 * ONE_DAY;
 const toBool = (v) =>
   v === true || v === 'true' || v === 'on' || v === 1 || v === '1';
 
@@ -58,6 +58,7 @@ controller.login = async(req,res,next)=>{
         //Verify if is User
         let user = await User.findOne({username:username});
         
+        
 
         if(!user){
             //Verify if is SuperUser
@@ -81,13 +82,12 @@ controller.login = async(req,res,next)=>{
         user.tokens = [hashedRT,...(user.tokens || [])].slice(0,5); // Keep only the last 5 tokens
         
         await user.save();
-        const exp = remember ? THIRTY_DAYS : ONE_DAY;
 
         res.cookie('rt',refreshToken,{
             httpOnly : true,
             secure: process.env.NODE_ENV === "production",
-            maxAge: exp,
-            path: '/api/v1/auth/**'
+            ...(remember && { maxAge: SEVEN_DAYS }),
+            path: '/api/v1/auth'
         })
         
         return res.status(200).json({
@@ -101,50 +101,62 @@ controller.login = async(req,res,next)=>{
     }
 }
 
-controller.refresh = async(req,res)=>{
-    try{
-        
+controller.refresh = async(req,res,next)=>{
+    try{   
         const oldToken = req.cookies.rt;
-        if(!oldToken) return res.status(401).json({error:"No token provided"});
+        if(!oldToken) {
+            
+            return res.status(401).json({error:"No token provided"});}
 
         const payload = await tools.verifyRefresh(oldToken);
-        if(!payload) return res.status(401).json({error:"Invalid refresh"});
+        if(!payload) {
+            
+            return res.status(401).json({error:"Invalid refresh"});}
 
         const {id,rememberMe} = payload;
-        const user = await User.findById(id) || await superUser.findById(id);
-        if(!user) return res.status(404).json({error:"User not found"});
-
-        const hashed = tools.hash(oldToken);
-        if(!user.tokens.includes(hashed)) {
-            user.tokens = [];
-            await user.save();
-            return res.status(401).json({error:"Token obsolete"});
-        }
-
-        const accessToken = await tools.createToken(user._id, user.role);
-        const newRefreshToken = await tools.signRefresh(user._id, user.role,rememberMe);
-
-        const newHash = tools.hash(newRefreshToken);
-        user.tokens = [newHash, ...user.tokens.filter(t => t !== hashed)].slice(0, 5);
-        await user.save();
-
-        const exp = rememberMe ? THIRTY_DAYS : ONE_DAY;
+        const remember = toBool(rememberMe);
+        
+        const oldHash = tools.hash(oldToken);
         
 
-        res.cookie('rt', newRefreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: exp,
-            path: '/api/v1/auth/**',
-            maxAge: exp
-        })
+        const user = await User.findById(id) ||
+                      await superUser.findById(id);
+                    
 
-        return res.status(200).json({
-            accessToken
-        })
+        if (!user) {
+      
+      await User.updateOne({ _id: id }, { $set: { tokens: [] } });
+      await superUser.updateOne({ _id: id }, { $set: { tokens: [] } });
+      
+      return res.status(401).json({ error: "Token obsolete" });
+    }
 
 
+    const accessToken = await tools.createToken(user._id, user.role);
+    const newRt = await tools.signRefresh(user._id, remember);
+    const newHash = tools.hash(newRt);
 
+    await user.updateOne(
+      { $set: { "tokens.$[match]": newHash } },
+      { arrayFilters: [{ match: oldHash }], runValidators: false }
+    );
+
+     res.cookie("rt", newRt, {
+      httpOnly: true,                   
+      secure: process.env.NODE_ENV === "production",
+      path: "/api/v1/auth",
+      ...(remember && { maxAge: SEVEN_DAYS }),
+    });
+
+     return res.status(200).json({
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+      },
+      accessToken,
+    });
 
     }catch(error){
 
@@ -270,7 +282,7 @@ controller.logout = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      path: '/api/v1/auth', // mismo path que usaste al setearla
+      path: '/api/v1/auth', 
     });
 
         if (!rt) return res.sendStatus(204);
