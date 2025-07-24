@@ -390,6 +390,14 @@ controller.getBeneficiaryDocuments = async(req,res,next)=>{
     }
 }
 
+controller.getBeneficiariesForCSV = async(req,res,next)=>{
+    try {
+        const beneficiaries = await Beneficiary.find({ 'active.value': true }, 'name dui age').lean();
+        res.status(200).json({beneficiaries});
+    } catch (error) {
+        next(error);
+    }
+}
 
 
 controller.deleteDocument = async (req,res,next)=>{

@@ -46,6 +46,7 @@ router.get('/inactive',authentication,authorization('read_beneficiaries'),benefi
 //GetCSV
 router.get('/csv',authentication,authorization('read_beneficiaries'),beneficiaryController.generateCSV);
 
+router.get('/getAll/csv', authentication, authorization('read_beneficiaries'), beneficiaryController.getBeneficiariesForCSV);
 
 // POST ROUTES
 
