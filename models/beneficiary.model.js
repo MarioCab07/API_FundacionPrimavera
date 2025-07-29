@@ -143,6 +143,11 @@ const beneficiarySchema = new Schema({
                 required: true,
                 trim: true
             },
+            path:{
+                type: String,
+                required: true,
+                trim: true
+            },
             date:{
                 type: Date,
                 default: Date.now()

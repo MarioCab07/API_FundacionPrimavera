@@ -287,7 +287,7 @@ controller.toggleActiveBeneficiary = async(req,res,next)=>{
 
         await beneficiary.save();
 
-        return res.status(200).json({message:"Beneficiary deactivated successfully"});
+        return res.status(200).json({message:"Beneficiary deactivated successfully",beneficiary});
 
     } catch (error) {
         
@@ -350,6 +350,7 @@ controller.uploadDocument = async(req,res,next)=>{
             const fileRecord = {
                 name: `${baseName}${ext}`,
                 url: publicUrl,
+                path: fileName,
                 date: new Date()
             };
             uploadedFiles.push(fileRecord);
@@ -403,8 +404,10 @@ controller.getBeneficiariesForCSV = async(req,res,next)=>{
 controller.deleteDocument = async (req,res,next)=>{
     try {
         const {identifier} = req.params;
+        
         let {fileName} = req.body;
-        fileName = fileName;
+        
+        
 
         const beneficiary = await Beneficiary.findById(identifier);
         if(!beneficiary){
@@ -416,19 +419,19 @@ controller.deleteDocument = async (req,res,next)=>{
             return res.status(404).json({error:"File not found"});
         }
 
-        
-        if (await fs.pathExists(filePath.url)) {
-            await fs.remove(filePath.url);
-          }
-        
-          beneficiary.files = beneficiary.files.filter((file) => file.name !== fileName);
-          await beneficiary.save();
+        const file = bucket.file(filePath.path);
+        await file.delete();
 
-        
+        beneficiary.files = beneficiary.files.filter(file => file.name !== fileName);
+        await beneficiary.save();
 
-        return res.status(200).json({message:"Document deleted successfully"});
+        return res.status(200).json({ 
+            message: "Document deleted successfully", 
+            newFiles: beneficiary.files 
+        });
     } catch (error) {
-        return res.status(500).json({ error});
+        
+        next(error);
     }
 }
 
