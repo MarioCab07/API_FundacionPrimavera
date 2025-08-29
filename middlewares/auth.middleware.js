@@ -1,7 +1,7 @@
 const debug = require('debug')('app:authMiddleware');
 const {verifyToken}= require("../utils/jwt.tools.js");
 //Import user model
-const superUser = require("../models/superUser.model.js")
+const SuperUser = require("../models/superUser.model.js")
 const User = require("../models/user.model.js")
 const { getPermissions } = require("../data/roles.data.js")
 
@@ -12,50 +12,26 @@ const middlewares= {};
 middlewares.authentication = async (req,res,next) =>{
     try {
         
-        //Verify authorization header
-        const {token} = req.cookies;
-        
-        if(!token){
-            return res.status(401).json({error:"Authorization header"});
-        }
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+    if (!token) return res.status(401).json({ error: "Missing access token" });
 
+    
+    const payload = await verifyToken(token);
+    if (!payload) return res.status(401).json({ error: "Invalid or expired access token" });
 
-        //Verify token
-  
-        if(!token){
-            return res.status(401).json({error:"User not authenticated"});
-        }
+    
+    const userId = payload.sub || payload.id;
+    let user = await SuperUser.findById(userId) || await User.findById(userId);
+    if (!user) return res.status(401).json({ error: "User not found" });
 
-        const payload = await verifyToken(token);
-        if(!payload){
-            return res.status(401).json({error:"User not authenticated"});
-        }
+    // 4) Adjunta info al request
+    req.user = user;
+    req.role = user.role;
 
-        const userId = payload['sub'];
-        
-
-        //Verify user
-        let user = await superUser.findById(userId);
-        if(!user){
-            user = await User.findById(userId);
-            if(!user){
-                return res.status(401).json({error:"User not authenticated"});
-            }
-            
-        }
-        //Compare token with saved token
-        const isTokenValid = user.tokens.includes(token);
-        if(!isTokenValid){
-            return res.status(401).json({error:"User not authenticated"});
-        }
-        //Modify request object
-        req.user = user;
-        req.token = token;
-        req.role = user.role;
-
-        next();
+        return next();
     } catch (error) {
-        next(error);
+        return next(error);
 
     }
 

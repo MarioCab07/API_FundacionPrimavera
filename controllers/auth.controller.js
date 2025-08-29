@@ -3,6 +3,10 @@ const User = require ('../models/user.model.js');
 const tools =  require( "../utils/jwt.tools.js")
 const debug = require('debug')('app:server') ;
 
+const ONE_DAY = 24 * 60 * 60 * 1000;
+const SEVEN_DAYS = 7 * ONE_DAY;
+const toBool = (v) =>
+  v === true || v === 'true' || v === 'on' || v === 1 || v === '1';
 
 const controller = {};
 
@@ -34,16 +38,18 @@ controller.superUserRegister = async(req,res,next)=>{
 
 
     } catch (error) {
-        debug("Error in superUserRegister", error);
+        
         next(error);
     }
 }
 
-controller.Login = async(req,res,next)=>{
+controller.login = async(req,res,next)=>{
 
     try {
         //TODO: Add rememberMe
         const {username, password} = req.body;
+        const remember = toBool(req.body.rememberMe);
+        
         
         if(typeof username !== "string" || typeof password !== "string"){
             return res.status(400).json({error:"Invalid data"});
@@ -51,6 +57,7 @@ controller.Login = async(req,res,next)=>{
 
         //Verify if is User
         let user = await User.findOne({username:username});
+        
         
 
         if(!user){
@@ -68,50 +75,95 @@ controller.Login = async(req,res,next)=>{
         }
 
         //Create Token
-        const token = await tools.createToken(user._id,user.role);
+        const accessToken = await tools.createToken(user._id,user.role);
+        const refreshToken = await tools.signRefresh(user._id,remember);
 
-        //Save Token
-        //Check Tokens lifetime - max 5 tokens
-        let _tokens = [...user.tokens]
-        const _verifyPromises = _tokens.map(async (_t) => {
-            const status = await tools.verifyToken(_t);
-            return  status ? _t: null;
-        });
-
-        _tokens = (await Promise.all(_verifyPromises))
-            .filter(_t =>_t)
-            .slice(0,5);
-
-        _tokens = [token,..._tokens];
-        user.tokens = _tokens;
-        
-            res.cookie("token", token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "Strict",
-                maxAge:  24 * 60 * 60 * 1000 // 1 day
-            });
-        
-        
-
-       
+        const hashedRT = tools.hash(refreshToken);
+        user.tokens = [hashedRT,...(user.tokens || [])].slice(0,5); // Keep only the last 5 tokens
         
         await user.save();
-        // Return Token
 
-        return res.status(200).json({name:user.name,username:user.username,role:user.role});
-
+        res.cookie('rt',refreshToken,{
+            httpOnly : true,
+            secure: process.env.NODE_ENV === "production",
+            ...(remember && { maxAge: SEVEN_DAYS }),
+            path: '/api/v1/auth'
+        })
         
-
-
-
+        return res.status(200).json({
+      user: { id: user._id, name: user.name, role: user.role },
+      accessToken
+    });
 
     } catch (error) {
-        
-        debug("Error in superUserLogin", error);
+       next(error);
         
     }
 }
+
+controller.refresh = async(req,res,next)=>{
+    try{   
+        const oldToken = req.cookies.rt;
+        if(!oldToken) {
+            
+            return res.status(401).json({error:"No token provided"});}
+
+        const payload = await tools.verifyRefresh(oldToken);
+        if(!payload) {
+            
+            return res.status(401).json({error:"Invalid refresh"});}
+
+        const {id,rememberMe} = payload;
+        const remember = toBool(rememberMe);
+        
+        const oldHash = tools.hash(oldToken);
+        
+
+        const user = await User.findById(id) ||
+                      await superUser.findById(id);
+                    
+
+        if (!user) {
+      
+      await User.updateOne({ _id: id }, { $set: { tokens: [] } });
+      await superUser.updateOne({ _id: id }, { $set: { tokens: [] } });
+      
+      return res.status(401).json({ error: "Token obsolete" });
+    }
+
+
+    const accessToken = await tools.createToken(user._id, user.role);
+    const newRt = await tools.signRefresh(user._id, remember);
+    const newHash = tools.hash(newRt);
+
+    await user.updateOne(
+      { $set: { "tokens.$[match]": newHash } },
+      { arrayFilters: [{ match: oldHash }], runValidators: false }
+    );
+
+     res.cookie("rt", newRt, {
+      httpOnly: true,                   
+      secure: process.env.NODE_ENV === "production",
+      path: "/api/v1/auth",
+      ...(remember && { maxAge: SEVEN_DAYS }),
+    });
+
+     return res.status(200).json({
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+      },
+      accessToken,
+    });
+
+    }catch(error){
+
+        next(error);
+    }
+}
+
 
 controller.userRegister = async(req,res,next)=>{
     try {
@@ -142,7 +194,7 @@ controller.userRegister = async(req,res,next)=>{
 
 
     } catch (error) {
-        debug("Error in UserRegister", error);
+        next(error);
         
     }
 } 
@@ -160,7 +212,7 @@ controller.updateUser = async(req,res,next)=>{
         user.name = name;
         user.dui = dui;
         user.phone_number = phone_number;
-        rol ? user.role = rol : user.role = user.role;
+        role ? user.role = role: user.role = user.role;
 
         
         user.generateUser();
@@ -171,7 +223,7 @@ controller.updateUser = async(req,res,next)=>{
 
 
       } catch (error) {
-        debug("Error in updateUser", error);
+        next(error);
     }
 }
 
@@ -193,7 +245,7 @@ controller.getAllUsers = async(req,res,next)=>{
         return res.status(200).json({Users});
 
     } catch (error) {
-        debug("Error in getAllUsers", error);
+        next(error);
 
     }
 }
@@ -208,7 +260,7 @@ controller.deleteUser = async(req,res,next)=>{
 
         return res.status(200).json({message:"User deleted successfully"});
     } catch (error) {
-        
+        next(error);
     }
 }
 
@@ -218,47 +270,41 @@ controller.whoAmi = async(req,res,next)=>{
         if(!user) return res.status(401).json({error:"User not authenticated"});
         return res.status(200).json({name:user.name,username:user.username,role:user.role});
     } catch (error) {
-        
+        next(error);
     }
 }
 
 controller.logout = async (req, res, next) => {
     try {
-        const { token } = req.cookies;
+         const rt = req.cookies?.rt;
 
-        if (!token) {
-            return res.status(401).json({ error: "No token provided" });
+         res.clearCookie('rt', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      path: '/api/v1/auth', 
+    });
+
+        if (!rt) return res.sendStatus(204);
+
+        const payload = await tools.verifyRefresh(rt);
+        if (payload) {
+            const id = payload.sub || payload.id;
+            const hashed = tools.hash(rt);
+            let user =
+        (await superUser.findById(id)) ||
+        (await User.findById(id));
+
+        if(user?.tokens){
+            user.tokens = user.tokens.filter(t => t !== hashed);
+            await user.save();
+        }
         }
 
-        const payload = await tools.verifyToken(token);
-        if (!payload) {
-            return res.status(401).json({ error: "Invalid token" });
-        }
+        return res.sendStatus(204);
 
-        const userId = payload['sub'];
-
-        // Find the user and remove the token
-        let user = await User.findById(userId);
-        if (!user) {
-            user = await superUser.findById(userId);
-            if (!user) {
-                return res.status(404).json({ error: "User not found" });
-            }
-        }
-
-        user.tokens = user.tokens.filter((t) => t !== token);
-        await user.save();
-
-        // Clear the cookie
-        res.clearCookie("token", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "Strict",
-        });
-
-        return res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
-        debug("Error in logout", error);
+        
         next(error);
     }
 };

@@ -1,9 +1,13 @@
 const fs = require('fs-extra');
 const path = require('path');
+const bucket  = require('../config/firebase');
 
 const Beneficiary = require('../models/beneficiary.model');
 const debug = require('debug')('app:ben controller');
 const {sanitizeName} = require('../utils/general.tools');
+const {AsyncParser}  = require("@json2csv/node")
+const SuperUser = require('../models/superUser.model');
+
 
 
 const controller ={};
@@ -19,11 +23,11 @@ controller.createBeneficiary = async (req,res,next) =>{
             birth_date,
             starting_date,
             phone_number,
-            adress,
+            home_phone,
+            address,
             birth_place,
-            work_occup,
-            income_level,
-            pension,
+            occupation,
+            income_type,
             weight,
             height,
             phone_company,
@@ -35,7 +39,7 @@ controller.createBeneficiary = async (req,res,next) =>{
             personIC_phone_number,
             personIC_dui,
             medical_service,
-            house_type,
+            house_condition,
             shirt_size,
             shoe_size,
             discapacities,
@@ -43,10 +47,26 @@ controller.createBeneficiary = async (req,res,next) =>{
             dependents,
             active,
             reason,
-            gender
+            gender,
+            write_and_read,
+            education_level,
+            people_in_house_quantity,
+            people_in_house_relationship,
+            department,
+            municipality,
+            zone,
+            reference_address,
+            referral_source,
+            transportation_difficulty,
+            transportation_difficulty_person,
+            agreement=true
         } = req.body;
 
-        let foldername = sanitizeName(name);
+        const {user} = req;
+        const modelName = user instanceof SuperUser ? 'SuperUser' : 'User';
+        
+
+        let foldername = `beneficiaries/${sanitizeName(name)}`;
 
         const age = new Date().getFullYear() - new Date(birth_date).getFullYear();
 
@@ -68,6 +88,19 @@ controller.createBeneficiary = async (req,res,next) =>{
             reason:reason
 
         }
+
+        const people_in_house = {
+            quantity: people_in_house_quantity,
+            relationship: people_in_house_relationship
+        }
+
+        const transportation = {
+            difficulty: transportation_difficulty,
+            person_available: transportation_difficulty_person
+        }
+
+
+        let newDependentes = JSON.parse(dependents)
         
         beneficiary =  new Beneficiary({
             name : name,
@@ -75,11 +108,11 @@ controller.createBeneficiary = async (req,res,next) =>{
             birth_date : birth_date,
             starting_date : starting_date,
             phone_number : phone_number,
-            adress : adress,
+            home_phone : home_phone,
+            address : address,
             birth_place : birth_place,
-            work_occup : work_occup,
-            income_level : income_level,
-            pension : pension,
+            occupation : occupation,
+            income_type : income_type,
             weight : weight,
             height : height,
             phone_company : phone_company,
@@ -89,28 +122,46 @@ controller.createBeneficiary = async (req,res,next) =>{
             blood_type : blood_type,
             person_in_charge : personIC,
             medical_service : medical_service,
-            house_type : house_type,
+            house_condition : house_condition,
             shirt_size : shirt_size,
             shoe_size : shoe_size,
             discapacities : discapacities,
             affiliation : affiliation,
-            dependents : dependents,
+            dependents : newDependentes,
             active : isActive,
             age:age,
-            gender:gender
+            gender:gender,
+            write_and_read:write_and_read,
+            education_level:education_level,
+            people_in_house:people_in_house,
+            department:department,
+            municipality:municipality,
+            zone:zone,
+            reference_address:reference_address,
+            referral_source:referral_source,
+            transportation:transportation,
+            agreement:agreement,
+            created_by: user._id,
+            created_byModel: modelName
+
+
+            
 
         });
 
         if (req.file) {
             const ext = path.extname(req.file.originalname);
-            const benFolder = path.join('uploads', 'beneficiaries', foldername);
-            const finalPath = path.join(benFolder, `photo${ext}`);
-            await fs.ensureDir(benFolder);
-            await fs.move(req.file.path, finalPath, { overwrite: true });
-            const absolutePath = `${req.protocol}://${req.get('host')}/${finalPath.replace(/\\/g, '/')}`;
+            const filename = `${foldername}/photo${ext}`;
+            const file = bucket.file(filename);
 
-            beneficiary.photo = absolutePath;
-             
+            await file.save(req.file.buffer,{
+                metadata:{
+                    contentType: req.file.mimetype
+                }
+            });
+
+            await file.makePublic();
+            beneficiary.photo = `https://storage.googleapis.com/${bucket.name}/${filename}`;
           }
 
         await beneficiary.save();
@@ -125,11 +176,14 @@ controller.createBeneficiary = async (req,res,next) =>{
 
 controller.getAllBeneficieries = async(req,res,next)=>{
     try {
-        let {page =1, limit = 6 } = req.query;
+        let {page =1, limit = 7 } = req.query;
         page = parseInt(page);
         limit = parseInt(limit);
+        const {user} = req;
+       
 
         const beneficiaries = await Beneficiary.find({ 'active.value': true })
+                                    .populate('created_by', 'name')
                                     .skip((page-1)*limit)
                                     .limit(parseInt(limit));
 
@@ -148,6 +202,7 @@ controller.getInactiveBeneficiaries = async(req,res,next)=>{
         limit = parseInt(limit);
 
         const beneficiaries = await Beneficiary.find({ 'active.value': false })
+                                    .populate('created_by', 'name')
                                     .skip((page-1)*limit)
                                     .limit(parseInt(limit));
 
@@ -162,10 +217,12 @@ controller.findBeneciary = async(req,res,next)=>{
     try {
         const {identifier} = req.params;
         const decodeId = decodeURIComponent(identifier);
+        debug(decodeId);
         
-        const beneficiary = await Beneficiary.findOne({$or:[{dui:decodeId},{name:decodeId}],'active.value':true});
         
-        if(!beneficiary){
+        const beneficiary = await Beneficiary.find({$or:[{dui:{$regex:decodeId}},{name:{$regex:decodeId, $options:'i'}}]}).select('name age dui active').populate('created_by', 'name');
+        
+        if(!beneficiary.length){
             return res.status(404).json({error:"Beneficiary not found"});
         }
 
@@ -178,37 +235,7 @@ controller.findBeneciary = async(req,res,next)=>{
 
 controller.updateBeneficiary = async(req,res,next)=>{
     try {
-        const {
-            name,
-            dui,
-            birth_date,
-            starting_date,
-            phone_number,
-            adress,
-            birth_place,
-            work_occup,
-            income_level,
-            pension,
-            weight,
-            height,
-            phone_company,
-            whatsapp,
-            illness,
-            medicines,
-            blood_type,
-            personIC_name,
-            personIC_phone_number,
-            personIC_dui,
-            medical_service,
-            house_type,
-            shirt_size,
-            shoe_size,
-            discapacities,
-            affiliation,
-            dependents,
-            active,
-            reason
-        } = req.body;
+       
 
         const {identifier} = req.params;
 
@@ -217,41 +244,9 @@ controller.updateBeneficiary = async(req,res,next)=>{
             return res.status(404).json({error:"Beneficiary not found"});
         }
 
-        const personIC ={
-            name:personIC_name,
-            phone_number:personIC_phone_number,
-            dui:personIC_dui
-        }
+       
 
-        
-
-        beneficiary.name = name;
-        beneficiary.dui = dui;
-        beneficiary.birth_date = birth_date;
-        beneficiary.starting_date = starting_date;
-        beneficiary.phone_number = phone_number;
-        beneficiary.adress = adress;
-        beneficiary.birth_place = birth_place;
-        beneficiary.work_occup = work_occup;
-        beneficiary.income_level = income_level;
-        beneficiary.pension = pension;
-        beneficiary.weight = weight;
-        beneficiary.height = height;
-        beneficiary.phone_company = phone_company;
-        beneficiary.whatsapp = whatsapp;
-        beneficiary.illness = illness;
-        beneficiary.medicines = medicines;
-        beneficiary.blood_type = blood_type;
-        beneficiary.person_in_charge = personIC;
-        beneficiary.medical_service = medical_service;
-        beneficiary.house_type = house_type;
-        beneficiary.shirt_size = shirt_size;
-        beneficiary.shoe_size = shoe_size;
-        beneficiary.discapacities = discapacities;
-        beneficiary.affiliation = affiliation;
-        beneficiary.dependents = dependents;
-        beneficiary.active.value = true;
-        beneficiary.active.reason = reason;
+        beneficiary = Object.assign(beneficiary, req.body);
 
         await beneficiary.save();
 
@@ -279,7 +274,7 @@ controller.toggleActiveBeneficiary = async(req,res,next)=>{
 
         await beneficiary.save();
 
-        return res.status(200).json({message:"Beneficiary deactivated successfully"});
+        return res.status(200).json({message:"Beneficiary deactivated successfully",beneficiary});
 
     } catch (error) {
         
@@ -314,7 +309,7 @@ controller.uploadDocument = async(req,res,next)=>{
             return res.status(404).json({error:"Beneficiary not found"});
         }
 
-        const folderName = sanitizeName(beneficiary.name);
+        const folderName = `beneficiaries/${sanitizeName(beneficiary.name)}/documents`;
 
         if(!req.files || req.files.length === 0){
             return res.status(400).json({error:"No file was uploaded"});
@@ -325,23 +320,30 @@ controller.uploadDocument = async(req,res,next)=>{
         for (const file of req.files){
 
             const ext = path.extname(file.originalname);
-            const fileName = `${path.basename(file.originalname, ext)}${ext}`;
-            const benFolder = path.join('uploads', 'beneficiaries', folderName,'documents');
-            const finalPath = path.join(benFolder, fileName);
-
-            await fs.ensureDir(benFolder);
-            await fs.move(file.path, finalPath, { overwrite: true });
-
-            const fileUrl = `${req.protocol}://${req.get('host')}/${finalPath.replace(/\\/g, '/')}`;
-            uploadedFiles.push({
-                name:fileName,
-                url:fileUrl,
-                date:Date.now()
+            const baseName = path.basename(file.originalname, ext);
+            const fileName = `${folderName}/${baseName}${ext}`;
+            
+            const remoteFile = bucket.file(fileName);
+            await remoteFile.save(file.buffer, {
+                metadata: {
+                    contentType: file.mimetype
+                }
             });
 
+            await remoteFile.makePublic();
+
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+            const fileRecord = {
+                name: `${baseName}${ext}`,
+                url: publicUrl,
+                path: fileName,
+                date: new Date()
+            };
+            uploadedFiles.push(fileRecord);
+            beneficiary.files.push(fileRecord);
         }
 
-        beneficiary.files.push(...uploadedFiles);
         await beneficiary.save();
         
                 
@@ -376,13 +378,23 @@ controller.getBeneficiaryDocuments = async(req,res,next)=>{
     }
 }
 
+controller.getBeneficiariesForCSV = async(req,res,next)=>{
+    try {
+        const beneficiaries = await Beneficiary.find({ 'active.value': true }, 'name dui age').lean();
+        res.status(200).json({beneficiaries});
+    } catch (error) {
+        next(error);
+    }
+}
 
 
 controller.deleteDocument = async (req,res,next)=>{
     try {
         const {identifier} = req.params;
+        
         let {fileName} = req.body;
-        fileName = fileName;
+        
+        
 
         const beneficiary = await Beneficiary.findById(identifier);
         if(!beneficiary){
@@ -394,19 +406,69 @@ controller.deleteDocument = async (req,res,next)=>{
             return res.status(404).json({error:"File not found"});
         }
 
-        
-        if (await fs.pathExists(filePath.url)) {
-            await fs.remove(filePath.url);
-          }
-        
-          beneficiary.files = beneficiary.files.filter((file) => file.name !== fileName);
-          await beneficiary.save();
+        const file = bucket.file(filePath.path);
+        await file.delete();
 
-        
+        beneficiary.files = beneficiary.files.filter(file => file.name !== fileName);
+        await beneficiary.save();
 
-        return res.status(200).json({message:"Document deleted successfully"});
+        return res.status(200).json({ 
+            message: "Document deleted successfully", 
+            newFiles: beneficiary.files 
+        });
     } catch (error) {
-        return res.status(500).json({ error});
+        
+        next(error);
+    }
+}
+
+controller.generateCSV = async(req,res,next)=>{
+    try {
+        
+
+        const {duiList=[],getAll="1",fields=[]} = req.body;
+        debug("body, ", req.body);
+        let data=[{}];
+        
+        
+        
+         if(String(getAll)==="1") {
+            
+            
+            data = await Beneficiary.find({ 'active.value': true })
+        }
+        else{
+            
+            data = await Promise.all(
+                duiList.map(async (dui) => {
+                    const beneficiary = await Beneficiary.findOne({dui:dui,'active.value':true});
+                    
+                    return beneficiary;
+                })
+            );
+
+            
+        }
+
+
+        
+
+        const parser = new AsyncParser({fields});
+        const csvStream = parser.parse(data);
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=beneficiarios.csv');
+        csvStream.pipe(res);
+        
+//return res.status(200).json({message:"CSV generated successfully"});
+    
+    } catch (error) {
+        
+        
+        
+        res.status(500).json({ error
+});
+
     }
 }
 

@@ -15,8 +15,9 @@ const validateFields = require('../middlewares/index.middleware');
 const { authentication, authorization } = require('../middlewares/auth.middleware');
 //Validator
 const validator = require('../validators/beneficiary.validator');
-//Upload middleware
-const upload = require('../middlewares/beneficiary.middleware');
+//Upload 
+const uploadPhoto = require('../middlewares/uploadPhoto.middleware');
+const uploadDocs = require('../middlewares/uploadDocs.middleware');
 
 
 
@@ -42,7 +43,10 @@ router.get('/read/document/:identifier',authentication,authorization('read_benef
 //Get Inactive Beneficiaries
 router.get('/inactive',authentication,authorization('read_beneficiaries'),beneficiaryController.getInactiveBeneficiaries);
 
+//GetCSV
+router.post('/csv',authentication,authorization('read_beneficiaries'),beneficiaryController.generateCSV);
 
+router.get('/getAll/csv', authentication, authorization('read_beneficiaries'), beneficiaryController.getBeneficiariesForCSV);
 
 // POST ROUTES
 
@@ -50,12 +54,12 @@ router.get('/inactive',authentication,authorization('read_beneficiaries'),benefi
 router.post('/create',
     authentication,
     authorization('modify_beneficiaries'),
-    upload.single('photo'),
+    uploadPhoto,
     validator.beneficiaryRegisterValidator,
     validateFields,
     beneficiaryController.createBeneficiary);
 
-router.post('/upload/document/:identifier',authentication,authorization('modify_beneficiaries'),upload.array('document',10),beneficiaryController.uploadDocument);
+router.post('/upload/document/:identifier',authentication,authorization('modify_beneficiaries'),uploadDocs,beneficiaryController.uploadDocument);
 
 
 // PUT ROUTES

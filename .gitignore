@@ -61,3 +61,6 @@ typings/
 .next
 
 uploads
+
+/config/*.json
+
