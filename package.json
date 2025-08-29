@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "dev": "nodemon ./bin/www"
+    "dev": "nodemon --watch ./bin --watch ./routes --watch ./controllers --watch ./models --ext js,json ./bin/www"
+
   },
   "dependencies": {
     "@json2csv/node": "^7.0.6",

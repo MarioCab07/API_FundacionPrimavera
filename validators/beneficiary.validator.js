@@ -9,33 +9,15 @@ validator.beneficiaryRegisterValidator = [
     body('dui')
         .notEmpty().withMessage('DUI is required')
         .isLength({min:10 , max:10}).withMessage('DUI must be 10 characters long'),
-    body('phone_number')
-        .notEmpty().withMessage('Phone number is required')
-        .isLength({min:9 }).withMessage('Phone number must be 9 characters long'),
-    body('adress')
+    body('address')
         .notEmpty().withMessage('Adress is required'),
     body('birth_place')
         .notEmpty().withMessage('Birth place is required'),
-    body('work_occup')
-        .notEmpty().withMessage('Work occupation is required'),
     body('birth_date')
         .notEmpty().withMessage('Birth date is required'),
-    body('income_level')
-        .notEmpty().withMessage('Income level is required'),
-    body('pension')
-        .notEmpty().withMessage('Pension is required')
-        .isBoolean().withMessage('Pension must be a boolean'),
-    body('weight')
-        .notEmpty().withMessage('Weight is required')
-        .isNumeric().withMessage('Weight must be a number'),
-    body('height')
-        .notEmpty().withMessage('Height is required')
-        .isNumeric().withMessage('Height must be a number'),
     body('whatsapp')
         .notEmpty().withMessage('Whatsapp is required')
         .isBoolean().withMessage('Whatsapp must be a boolean'),
-    body('house_type')
-        .notEmpty().withMessage('House type is required'),
     body('shirt_size')
         .notEmpty().withMessage('Shirt size is required'),
     body('shoe_size')

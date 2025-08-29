@@ -30,7 +30,11 @@ const beneficiarySchema = new Schema({
         type: String,
         trim: true
     },
-    adress:{
+    home_phone:{
+        type: String,
+        trim: true
+    },
+    address:{
         type: String,
         required: true,
         trim: true
@@ -40,45 +44,49 @@ const beneficiarySchema = new Schema({
         required: true,
         trim: true
     },
-    work_occup:{
+    occupation:{
+        type: String,
+        trim: true,
+        default: "N/A"
+    },
+    write_and_read:{
+        type: Boolean,
+        required: true
+    },
+    education_level:{
         type: String,
         
-
+        trim: true
     },
-    income_level:{
+    income_type:{
         type: String,
-        required: true,
-    },
-    pension:{
-        type: Boolean,
-        required: true,
     },
     weight:{
         type: Number,
-        required: true
+
     },
     height:{
         type: Number,
-        required: true
+
     },
     phone_company:{
         type: String,
         
         trim: true,
-        default:""
+        default:"N/A"
     },
     whatsapp:{
         type: Boolean,
         required: true
     },
     illness:{
-        type:[String],
-        default:[]
+        type:String,
+        default:"N/A"
 
     },
     medicines:{
-        type:[String],
-        default:[]
+        type:String,
+        default:"N/A"
     },
     blood_type:{
         type: String,
@@ -87,29 +95,42 @@ const beneficiarySchema = new Schema({
     person_in_charge:{
         name:{
             type: String,
-            default : "",
+            default : "N/A",
             trim: true
         },
         phone_number:{
             type: String,
             trim: true,
-            default : ""
+            default : "N/A"
         },
         dui:{
             type: String,
-            default : "",
+            default : "N/A",
             trim: true
         },
         default:{}
     },
     medical_service:{
         type: String,
-        default:""
+        default:"N/A"
         
     },
-    house_type:{
+    house_condition:{
         type: String,
-        required: true
+        required: true,
+        trim: true
+    },
+    people_in_house:{
+        quantity: {
+            type: Number,
+            required: true,
+            default:0
+        },
+        relationship: {
+            type: String,
+            default:"N/A"
+
+        }
     },
     shirt_size:{
         type: String,
@@ -120,8 +141,8 @@ const beneficiarySchema = new Schema({
         required: true
     },
     discapacities:{
-        type:[String],
-        default:[]
+        type:String,
+        default:"N/A"
     },
     affiliation:{
         type: String,
@@ -167,7 +188,55 @@ const beneficiarySchema = new Schema({
         type: String,
         trim:true,
         required:true
-    }
+    },
+    department:{
+        type: String,
+        required: true,
+        trim: true
+    },
+    municipality:{
+        type: String,
+        required: true,
+        trim: true
+    },
+    zone:{
+        type: String,
+        required: true,
+        trim: true
+    },
+    reference_address:{
+        type: String,
+        trim: true
+    },
+    referral_source:{
+        type: String,
+        required: true,
+        trim: true
+    },
+    transportation:{
+        difficulty: {
+            type: Boolean,
+            default: false
+        },
+        person_available: {
+            type: Boolean,
+            default: false
+        },
+    },
+    agreement:{
+        type: Boolean,
+        default: true
+    },
+    created_by:{
+        type: Schema.Types.ObjectId,
+        required: true,
+        refPath: 'created_byModel'
+    },
+     created_byModel: {
+    type: String,
+    required: true,
+    enum: ['User', 'SuperUser']
+  }
 
 
 
