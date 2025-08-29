@@ -6,6 +6,7 @@ const Beneficiary = require('../models/beneficiary.model');
 const debug = require('debug')('app:ben controller');
 const {sanitizeName} = require('../utils/general.tools');
 const {AsyncParser}  = require("@json2csv/node")
+const SuperUser = require('../models/superUser.model');
 
 
 
@@ -22,11 +23,11 @@ controller.createBeneficiary = async (req,res,next) =>{
             birth_date,
             starting_date,
             phone_number,
-            adress,
+            home_phone,
+            address,
             birth_place,
-            work_occup,
-            income_level,
-            pension,
+            occupation,
+            income_type,
             weight,
             height,
             phone_company,
@@ -38,7 +39,7 @@ controller.createBeneficiary = async (req,res,next) =>{
             personIC_phone_number,
             personIC_dui,
             medical_service,
-            house_type,
+            house_condition,
             shirt_size,
             shoe_size,
             discapacities,
@@ -46,8 +47,23 @@ controller.createBeneficiary = async (req,res,next) =>{
             dependents,
             active,
             reason,
-            gender
+            gender,
+            write_and_read,
+            education_level,
+            people_in_house_quantity,
+            people_in_house_relationship,
+            department,
+            municipality,
+            zone,
+            reference_address,
+            referral_source,
+            transportation_difficulty,
+            transportation_difficulty_person,
+            agreement=true
         } = req.body;
+
+        const {user} = req;
+        const modelName = user instanceof SuperUser ? 'SuperUser' : 'User';
         
 
         let foldername = `beneficiaries/${sanitizeName(name)}`;
@@ -72,6 +88,18 @@ controller.createBeneficiary = async (req,res,next) =>{
             reason:reason
 
         }
+
+        const people_in_house = {
+            quantity: people_in_house_quantity,
+            relationship: people_in_house_relationship
+        }
+
+        const transportation = {
+            difficulty: transportation_difficulty,
+            person_available: transportation_difficulty_person
+        }
+
+
         let newDependentes = JSON.parse(dependents)
         
         beneficiary =  new Beneficiary({
@@ -80,11 +108,11 @@ controller.createBeneficiary = async (req,res,next) =>{
             birth_date : birth_date,
             starting_date : starting_date,
             phone_number : phone_number,
-            adress : adress,
+            home_phone : home_phone,
+            address : address,
             birth_place : birth_place,
-            work_occup : work_occup,
-            income_level : income_level,
-            pension : pension,
+            occupation : occupation,
+            income_type : income_type,
             weight : weight,
             height : height,
             phone_company : phone_company,
@@ -94,7 +122,7 @@ controller.createBeneficiary = async (req,res,next) =>{
             blood_type : blood_type,
             person_in_charge : personIC,
             medical_service : medical_service,
-            house_type : house_type,
+            house_condition : house_condition,
             shirt_size : shirt_size,
             shoe_size : shoe_size,
             discapacities : discapacities,
@@ -102,7 +130,22 @@ controller.createBeneficiary = async (req,res,next) =>{
             dependents : newDependentes,
             active : isActive,
             age:age,
-            gender:gender
+            gender:gender,
+            write_and_read:write_and_read,
+            education_level:education_level,
+            people_in_house:people_in_house,
+            department:department,
+            municipality:municipality,
+            zone:zone,
+            reference_address:reference_address,
+            referral_source:referral_source,
+            transportation:transportation,
+            agreement:agreement,
+            created_by: user._id,
+            created_byModel: modelName
+
+
+            
 
         });
 
@@ -133,11 +176,14 @@ controller.createBeneficiary = async (req,res,next) =>{
 
 controller.getAllBeneficieries = async(req,res,next)=>{
     try {
-        let {page =1, limit = 6 } = req.query;
+        let {page =1, limit = 7 } = req.query;
         page = parseInt(page);
         limit = parseInt(limit);
+        const {user} = req;
+       
 
         const beneficiaries = await Beneficiary.find({ 'active.value': true })
+                                    .populate('created_by', 'name')
                                     .skip((page-1)*limit)
                                     .limit(parseInt(limit));
 
@@ -156,6 +202,7 @@ controller.getInactiveBeneficiaries = async(req,res,next)=>{
         limit = parseInt(limit);
 
         const beneficiaries = await Beneficiary.find({ 'active.value': false })
+                                    .populate('created_by', 'name')
                                     .skip((page-1)*limit)
                                     .limit(parseInt(limit));
 
@@ -170,10 +217,12 @@ controller.findBeneciary = async(req,res,next)=>{
     try {
         const {identifier} = req.params;
         const decodeId = decodeURIComponent(identifier);
+        debug(decodeId);
         
-        const beneficiary = await Beneficiary.findOne({$or:[{dui:decodeId},{name:decodeId}],'active.value':true});
         
-        if(!beneficiary){
+        const beneficiary = await Beneficiary.find({$or:[{dui:{$regex:decodeId}},{name:{$regex:decodeId, $options:'i'}}]}).select('name age dui active').populate('created_by', 'name');
+        
+        if(!beneficiary.length){
             return res.status(404).json({error:"Beneficiary not found"});
         }
 
@@ -186,37 +235,7 @@ controller.findBeneciary = async(req,res,next)=>{
 
 controller.updateBeneficiary = async(req,res,next)=>{
     try {
-        const {
-            name,
-            dui,
-            birth_date,
-            starting_date,
-            phone_number,
-            adress,
-            birth_place,
-            work_occup,
-            income_level,
-            pension,
-            weight,
-            height,
-            phone_company,
-            whatsapp,
-            illness,
-            medicines,
-            blood_type,
-            personIC_name,
-            personIC_phone_number,
-            personIC_dui,
-            medical_service,
-            house_type,
-            shirt_size,
-            shoe_size,
-            discapacities,
-            affiliation,
-            dependents,
-            active,
-            reason
-        } = req.body;
+       
 
         const {identifier} = req.params;
 
@@ -225,41 +244,9 @@ controller.updateBeneficiary = async(req,res,next)=>{
             return res.status(404).json({error:"Beneficiary not found"});
         }
 
-        const personIC ={
-            name:personIC_name,
-            phone_number:personIC_phone_number,
-            dui:personIC_dui
-        }
+       
 
-        
-
-        beneficiary.name = name;
-        beneficiary.dui = dui;
-        beneficiary.birth_date = birth_date;
-        beneficiary.starting_date = starting_date;
-        beneficiary.phone_number = phone_number;
-        beneficiary.adress = adress;
-        beneficiary.birth_place = birth_place;
-        beneficiary.work_occup = work_occup;
-        beneficiary.income_level = income_level;
-        beneficiary.pension = pension;
-        beneficiary.weight = weight;
-        beneficiary.height = height;
-        beneficiary.phone_company = phone_company;
-        beneficiary.whatsapp = whatsapp;
-        beneficiary.illness = illness;
-        beneficiary.medicines = medicines;
-        beneficiary.blood_type = blood_type;
-        beneficiary.person_in_charge = personIC;
-        beneficiary.medical_service = medical_service;
-        beneficiary.house_type = house_type;
-        beneficiary.shirt_size = shirt_size;
-        beneficiary.shoe_size = shoe_size;
-        beneficiary.discapacities = discapacities;
-        beneficiary.affiliation = affiliation;
-        beneficiary.dependents = dependents;
-        beneficiary.active.value = true;
-        beneficiary.active.reason = reason;
+        beneficiary = Object.assign(beneficiary, req.body);
 
         await beneficiary.save();
 
@@ -439,7 +426,8 @@ controller.generateCSV = async(req,res,next)=>{
     try {
         
 
-        const {duiList=[],getAll="1"} = req.body;
+        const {duiList=[],getAll="1",fields=[]} = req.body;
+        debug("body, ", req.body);
         let data=[{}];
         
         
@@ -463,13 +451,7 @@ controller.generateCSV = async(req,res,next)=>{
         }
 
 
-        const fields = [
-            {label: "Nombre",value:"name"},
-            {label:"DUI", value:"dui"},
-            {label:"Edad", value:"age"},
-            {label:"Sexo", value:"gender"},
-            {label:"Telefono", value:"phone_number"}
-        ];
+        
 
         const parser = new AsyncParser({fields});
         const csvStream = parser.parse(data);
