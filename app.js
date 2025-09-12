@@ -22,7 +22,7 @@ app.use(express.urlencoded({ limit: '25mb', extended: true }));
 app.use(mongoSanitize());
 app.use(cors({
     origin: (origin,callback)=>{
-        if(!origin || origin.startsWith('http://192.168.') || origin === 'http://localhost:5173' 
+        if(!origin || origin.startsWith('http://192.168.') || origin === 'http://localhost:5173' || origin === "http://fundacionserver.local" 
             ){
                 callback(null,true)
             }else{
