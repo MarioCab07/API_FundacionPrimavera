@@ -236,6 +236,9 @@ const beneficiarySchema = new Schema({
     type: String,
     required: true,
     enum: ['User', 'SuperUser']
+  },
+  community:{
+    type: String
   }
 
 
