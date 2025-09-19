@@ -22,14 +22,14 @@ app.use(express.urlencoded({ limit: '25mb', extended: true }));
 app.use(mongoSanitize());
 app.use(cors({
     origin: (origin,callback)=>{
-        if(!origin || origin.startsWith('http://192.168.') || origin === 'http://localhost:5173' 
+        if(!origin || origin.startsWith('http://192.168.') || origin === 'http://localhost:5173' || origin === "http://fundacionserver.local" 
             ){
                 callback(null,true)
             }else{
                 callback(new Error('Not allowed by CORS'))
             }
     },
-    methods: 'GET,POST,PUT,DELETE,PATCH',
+    methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS,OPTION',
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
 }))
