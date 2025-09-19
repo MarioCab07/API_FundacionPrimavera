@@ -7,7 +7,7 @@ const controller = {};
 
 controller.createVolunteer = async(req,res,next)=>{
     try {
-        const {name,dui, birth_date,starting_date,occupation,university,phone_number,adress,service_type,year_studied} = req.body;
+        const {name,dui, birth_date,starting_date,occupation,university,phone_number,address,service_type,year_studied,gender} = req.body;
 
         let volunteer = await Volunteer.findOne({dui});
         if(volunteer){
@@ -24,11 +24,12 @@ controller.createVolunteer = async(req,res,next)=>{
             occupation,
             university,
             phone_number,
-            adress,
+            address,
             service_type,
             year_studied,
             age:age,
-            active:true
+            active:true,
+            gender
         });
 
         await volunteer.save();
@@ -49,7 +50,7 @@ controller.createVolunteer = async(req,res,next)=>{
 
         return res.status(201).json({message:"Volunteer created successfully"});
     } catch (error) {
-        
+        debug(error);
     }
 }
 

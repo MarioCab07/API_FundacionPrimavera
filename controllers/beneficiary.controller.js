@@ -59,7 +59,8 @@ controller.createBeneficiary = async (req,res,next) =>{
             referral_source,
             transportation_difficulty,
             transportation_difficulty_person,
-            agreement=true
+            agreement=true,
+            community
         } = req.body;
 
         const {user} = req;
@@ -142,8 +143,8 @@ controller.createBeneficiary = async (req,res,next) =>{
             transportation:transportation,
             agreement:agreement,
             created_by: user._id,
-            created_byModel: modelName
-
+            created_byModel: modelName,
+            community: community
 
             
 

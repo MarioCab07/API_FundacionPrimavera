@@ -33,7 +33,7 @@ const volunteerSchema = new Schema({
         required: true,
         trim: true
     },
-    adress:{
+    address:{
         type: String,
         required: true,
         trim: true
@@ -57,7 +57,12 @@ const volunteerSchema = new Schema({
     active:{
         type: Boolean,
         default: true
-    }
+    },
+    gender:{
+        type: String,
+        required: true
+    },
+
 
 
 },{timestamps:true});
