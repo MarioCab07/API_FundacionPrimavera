@@ -167,7 +167,7 @@ controller.refresh = async(req,res,next)=>{
 
 controller.userRegister = async(req,res,next)=>{
     try {
-        const {name,dui,phone_number, role} = req.body;
+        const {name,dui,phone_number, role, email} = req.body;
         const user =  await User.findOne({dui:dui});
         if(user){
             return res.status(409).json({error:"User already exists"});
@@ -178,6 +178,7 @@ controller.userRegister = async(req,res,next)=>{
             phone_number:phone_number,
             dui:dui,
             role:role,
+            email:email
         })
         newUser.encryptPassword();
         const password = newUser.desencryptPassword();

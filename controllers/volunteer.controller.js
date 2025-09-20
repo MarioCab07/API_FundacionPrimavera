@@ -57,7 +57,8 @@ controller.createVolunteer = async(req,res,next)=>{
 controller.findVolunteer = async(req,res,next)=>{
     try {
         const {identifier} = req.params;
-        let volunteer = await Volunteer.findOne({$or:[{dui:identifier},{_id:identifier},{name:identifier}]});
+        const decodeId = decodeURIComponent(identifier);
+        const volunteer = await Volunteer.find({$or:[{dui:{$regex:decodeId}},{name:{$regex:decodeId, $options:'i'}}]}).select('name age dui active service_type');
         if(!volunteer){
             return res.status(404).json({error:"Volunteer not found"});
         }

@@ -44,6 +44,11 @@ const userSchema = new Schema({
     tokens:{
         type: [String],
         default: []
+    },
+    email:{
+        type: String,
+        trim: true,
+        lowercase: true,
     }
 
 },{timestamps: true});
