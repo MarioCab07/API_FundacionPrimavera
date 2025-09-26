@@ -7,7 +7,7 @@ const controller = {};
 
 controller.createVolunteer = async(req,res,next)=>{
     try {
-        const {name,dui, birth_date,starting_date,occupation,university,phone_number,address,service_type,year_studied,gender} = req.body;
+        const {name,dui, birth_date,starting_date,occupation,university,phone_number,address,service_type,year_studied,gender,ending_date} = req.body;
 
         let volunteer = await Volunteer.findOne({dui});
         if(volunteer){
@@ -29,7 +29,8 @@ controller.createVolunteer = async(req,res,next)=>{
             year_studied,
             age:age,
             active:true,
-            gender
+            gender,
+            ending_date
         });
 
         await volunteer.save();
@@ -90,7 +91,7 @@ controller.getAllVolunteers = async(req,res,next)=>{
 controller.updateVolunteer = async(req,res,next)=>{
     try {
         const {identifier} = req.params;
-        const {name,dui, birth_date,starting_date,occupation,university,phone_number,adress,service_type,year_studied} = req.body;
+        const {name,dui, birth_date,starting_date,occupation,university,phone_number,address,service_type,year_studied} = req.body;
         
 
         let volunteer = await Volunteer.findById(identifier);
@@ -105,7 +106,7 @@ controller.updateVolunteer = async(req,res,next)=>{
         volunteer.occupation = occupation;
         volunteer.university = university;
         volunteer.phone_number = phone_number;
-        volunteer.adress = adress;
+        volunteer.address = address;
         volunteer.service_type = service_type;
         volunteer.year_studied = year_studied;
 
@@ -126,19 +127,7 @@ controller.deleteVolunteer = async(req,res,next)=>{
             return res.status(404).json({error:"Volunteer not found"});
         }
 
-        const associatedUser = await User.findOne({dui:dui});
-        if(associatedUser){
-            const petition = new Petition({
-                volunteerId:volunteer._id,
-                userId:associatedUser._id,
-                action:"deleteUser",
-                status:"pending",
-                details:`El voluntario ${volunteer.name} fue eliminado. ¿Desea eliminar también el usuario asociado?`,
-                dui:dui
-            });
-
-            await petition.save();
-        }
+        const associatedUser = await User.findOneAndDelete({dui:dui});
 
         
 

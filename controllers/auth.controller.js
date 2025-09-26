@@ -1,5 +1,6 @@
 const superUser = require ('../models/superUser.model.js');
 const User = require ('../models/user.model.js');
+const Volunteer = require('../models/volunteer.model.js')
 const tools =  require( "../utils/jwt.tools.js")
 const debug = require('debug')('app:server') ;
 
@@ -202,9 +203,9 @@ controller.userRegister = async(req,res,next)=>{
 
 controller.updateUser = async(req,res,next)=>{
     try {
-        const {name,dui,phone_number,role}=req.body;
-        const {id} = req.params;
-        let user = await User.findById(id);
+        const {name,dui,phone_number,role,email}=req.body;
+        const {identifier} = req.params;
+        let user = await User.findById(identifier);
         if(!user){
             return res.status(404).json({error:"User not found"});
         }
@@ -213,6 +214,7 @@ controller.updateUser = async(req,res,next)=>{
         user.name = name;
         user.dui = dui;
         user.phone_number = phone_number;
+        user.email = email
         role ? user.role = role: user.role = user.role;
 
         
@@ -220,7 +222,7 @@ controller.updateUser = async(req,res,next)=>{
 
         await user.save();
 
-        return res.status(200).json({message:"User updated successfully",new_User:user.username});
+        return res.status(200).json({message:"User updated successfully",new_User:user});
 
 
       } catch (error) {
@@ -239,7 +241,8 @@ controller.getAllUsers = async(req,res,next)=>{
                 phone_number: user.phone_number,
                 role: user.role,
                 username: user.username,
-                password : user.desencryptPassword()
+                password : user.desencryptPassword(),
+                email: user.email,
             }
         });
         
@@ -254,9 +257,18 @@ controller.getAllUsers = async(req,res,next)=>{
 controller.deleteUser = async(req,res,next)=>{
     try {
         const {identifier} = req.params;
-        let user =  await User.findOneAndDelete({$or:[{dui:identifier},{_id:identifier}]});
+        debug(identifier);
+let user = await User.findOneAndDelete({ dui: identifier });
+let volunteer = await Volunteer.findOne({ dui: identifier });
+
+
         if(!user){
             return res.status(404).json({error:"User not found"});
+        }
+
+        if(volunteer){
+            volunteer.userName = "NA";
+            await volunteer.save();
         }
 
         return res.status(200).json({message:"User deleted successfully"});

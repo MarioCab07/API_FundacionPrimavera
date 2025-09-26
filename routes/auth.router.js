@@ -37,12 +37,12 @@ router.get('/whoami',authentication,authController.whoAmi);
 
 //PUT ROUTES
 //Update user
-router.put('/update/user/:id',authentication,authorization('modify_users'),validateFields,authController.updateUser);
+router.put('/update/user/:identifier',authentication,authorization('modify_users'),validateFields,authController.updateUser);
 
 
 //DELETE ROUTES
 //Delete user
-router.delete('/delete/user/:id',authentication,authorization('modify_users'),authController.deleteUser);
+router.delete('/delete/user/:identifier',authentication,authorization('modify_users'),authController.deleteUser);
 
 
 module.exports =  router;
