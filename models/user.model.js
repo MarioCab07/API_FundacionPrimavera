@@ -44,6 +44,11 @@ const userSchema = new Schema({
     tokens:{
         type: [String],
         default: []
+    },
+    email:{
+        type: String,
+        trim: true,
+        lowercase: true,
     }
 
 },{timestamps: true});
@@ -91,10 +96,12 @@ userSchema.methods = {
             return ''
         }
     
-        const first = _username[0].slice(0, 3).toLowerCase(); // Primeras 3 letras del primer nombre
-        const second = _username[2] ? _username[2].slice(0, 3).toLowerCase() : _username[1].slice(0, 3).toLowerCase();
-        const number = this.dui.slice(0,3)
-        this.username = `${first}_${second}_${number}`;
+        const first = _username[0].toLowerCase(); // Primeras 4 letras del primer nombre
+        const second = _username[2] ? _username[2].slice(0, 4).toLowerCase() : _username[1].slice(0, 4).toLowerCase();
+        const number = Math.floor(Math.random() * 1000) // entre 0 y 999
+    .toString()
+    .padStart(3, "0");
+        this.username = `${first}_${second}${number}`;
     }
 }
 

@@ -62,6 +62,9 @@ const volunteerSchema = new Schema({
         type: String,
         required: true
     },
+    ending_date:{
+        type: Date,
+    }
 
 
 
