@@ -12,20 +12,12 @@ Routes
 
 
 //GET ROUTES
-//General Stats
-router.get('/general',authentication,authorization('read_stats'),StatsController.generalStats);
+//Stats for bar chart
+router.get('/bar',authentication,authorization('read_stats'),StatsController.barChartStats);
 
-//Age Stats
-router.get('/age',authentication,authorization('read_stats'),StatsController.ageStats);
+//Stats for pie chart
+router.get('/circular',authentication,authorization('read_stats'),StatsController.circularChartStats);
 
-//Phone Stats
-router.get('/phone',authentication,authorization('read_stats'),StatsController.phoneStats);
-
-//House Type Stats
-router.get('/house',authentication,authorization('read_stats'),StatsController.houseStats);
-
-//Income Level Stats
-router.get('/income',authentication,authorization('read_stats'),StatsController.incomeStats);
-
+router.get('/cross',authentication,authorization('read_stats'),StatsController.crossFilterStats);
 
 module.exports = router;
