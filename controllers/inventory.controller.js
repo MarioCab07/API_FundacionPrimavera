@@ -43,13 +43,11 @@ controller.createItem = async(req,res,next)=>{
 
 controller.getAll = async(req,res,next)=>{
     try {
-        const {page=1, limit=6} = req.query;
-        const items = await Inventory.find().limit(limit * 1).skip((page - 1) * limit);
+        
+        const items = await Inventory.find();
         const count = await Inventory.countDocuments();
         return res.status(200).json({
-            items,
-            totalPages: Math.ceil(count/limit),
-            currentPage: page
+            items
         });
     } catch (error) {
         

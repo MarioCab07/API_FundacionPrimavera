@@ -3,99 +3,149 @@ const debug = require('debug')('app:statsController');
 
 const controller = {};
 
-controller.generalStats = async(req,res,next)=>{
+
+
+controller.barChartStats = async (req, res, next) => {
     try {
-        const totalBeneficiaries = await Beneficiary.countDocuments({"active.value":true});
-        const totalMen = await Beneficiary.countDocuments({gender:"Masculino","active.value":true});
-        const totalWomen = await Beneficiary.countDocuments({gender:"Femenino","active.value":true});
-        const totalPensioners = await Beneficiary.countDocuments({pension:true,"active.value":true});
+    const fields = [
+      "blood_type",
+      "house_condition",
+      "municipality",
+      "education_level",
+      "income_type",
+      "phone_company",
+      "shirt_size",
+      "shoe_size"
+    ];
+    const results = {}; 
+    for (const field of fields) {
+      results[field] = await Beneficiary.aggregate([
+        { $group: { _id: `$${field}`, count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]);
+    }
     
-        return res.status(200).json({TotalBeneficiares:totalBeneficiaries,TotalMen:totalMen,TotalWomen:totalWomen,TotalPensioners:totalPensioners});
-    } catch (error) {
-        
-    }
-}
-
-controller.ageStats = async(req,res,next)=>{
-    try {
-
-        
-        let {age,greater = 1} = req.query;
-        age = parseInt(age);
-        greater = parseInt(greater);
-        const filter = {"active.value":true};
-        
-        if(greater===1){
-            
-
-            filter.age = {$gt:age};
-        }else{
-            
-            filter.age = {$lt:age};
+        results.age = await Beneficiary.aggregate([
+      {
+        $bucket: {
+          groupBy: "$age",
+          boundaries: [0, 12, 18, 30, 50, 70, 100],
+          default: "Desconocido",
+          output: { count: { $sum: 1 } }
         }
-        
-        const beneficiaries = await Beneficiary.countDocuments(filter);
-        return res.status(200).json({TotalBeneficiaries:beneficiaries});
+      }
+    ]);
+
+    results.total = await Beneficiary.countDocuments();
+
+    return res.status(200).json({ stats: results });
+    
     } catch (error) {
-        
+            res.status(500).json({ error: error.message });
     }
 }
 
-controller.phoneStats = async(req,res,next)=>{
+controller.circularChartStats = async (req, res, next) => {
+  try {
+    const results = {};
+
+    // Teléfono
+results.phone = {
+  with: await Beneficiary.countDocuments({
+    phone_number: { $nin: ["", null] }
+  }),
+  without: await Beneficiary.countDocuments({
+    $or: [{ phone_number: "" }, { phone_number: null }]
+  })
+};
+
+    // Leer y escribir
+    results.write_and_read = {
+      yes: await Beneficiary.countDocuments({ write_and_read: true }),
+      no: await Beneficiary.countDocuments({ write_and_read: false })
+    };
+
+    // WhatsApp
+    results.whatsapp = {
+      yes: await Beneficiary.countDocuments({ whatsapp: true }),
+      no: await Beneficiary.countDocuments({ whatsapp: false })
+    };
+
+    // Responsable
+    results.person_in_charge = {
+      with: await Beneficiary.countDocuments({ "person_in_charge.name": { $ne: "N/A" } }),
+      without: await Beneficiary.countDocuments({ "person_in_charge.name": "N/A" })
+    };
+
+    // Dependientes
+    results.dependents = {
+      with: await Beneficiary.countDocuments({ dependents: { $exists: true, $ne: [] } }),
+      without: await Beneficiary.countDocuments({ $or: [{ dependents: { $size: 0 } }, { dependents: null }] })
+    };
+
+    // Salud (discapacidad o enfermedad distinta de N/A)
+    results.health = {
+      with: await Beneficiary.countDocuments({
+        $or: [{ discapacities: { $ne: "N/A" } }, { illness: { $ne: "N/A" } }]
+      }),
+      without: await Beneficiary.countDocuments({ discapacities: "N/A", illness: "N/A" })
+    };
+
+    // Género
+    results.gender = await Beneficiary.aggregate([
+      { $group: { _id: "$gender", count: { $sum: 1 } } }
+    ]);
+
+    // Departamento
+    results.department = await Beneficiary.aggregate([
+      { $group: { _id: "$department", count: { $sum: 1 } } }
+    ]);
+
+    // Zona
+    results.zone = await Beneficiary.aggregate([
+      { $group: { _id: "$zone", count: { $sum: 1 } } }
+    ]);
+
+    // Transporte
+    results.transportation = {
+      difficulty: await Beneficiary.countDocuments({ "transportation.difficulty": true }),
+      available: await Beneficiary.countDocuments({ "transportation.person_available": true })
+    };
+
+    return res.status(200).json({ stats: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+
+controller.crossFilterStats = async (req, res, next) => {
     try {
-        
-        const companyStats = await Beneficiary.aggregate([{
-            $match: {"active.value":true}
+          const { field1, field2 } = req.query;
+
+  if (!field1 || !field2) {
+    return res.status(400).json({ error: "Faltan parámetros" });
+  }
+    const results = await Beneficiary.aggregate([
+      {
+        $group: {
+          _id: { [field1]: `$${field1}`, [field2]: `$${field2}` },
+          count: { $sum: 1 },
         },
-        {
-            $group:{
-                _id:"$phone_company",
-                total:{ $sum:1}
-            }
-        }
-            ]);
-        
-        const whatsappStats = await Beneficiary.countDocuments({whatsapp:true,"active.value":true});
-
-
-        return res.status(200).json({CompanyStats:companyStats,WhatsappStats:whatsappStats});
-    } catch (error) {
-        
-    }
-}
-
-controller.houseStats = async(req,res,next)=>{
-    try {
-        const houseType = await Beneficiary.aggregate([{
-            $match: {"active.value":true}
-        },{
-            $group:{
-                _id:"$house_type",
-                total:{$sum:1}
-            }
-        }]);
-        return res.status(200).json({HouseTypeStats:houseType});
-    } catch (error) {
-        
-    }
-}
-
-controller.incomeStats = async(req,res,next)=>{
-    try {
-        const incomeLevel = await Beneficiary.aggregate([{
-            $match:{"active.value":true}
+      },
+      {
+        $project: {
+          [field1]: "$_id." + field1,
+          [field2]: "$_id." + field2,
+          count: 1,
+          _id: 0,
         },
-        {
-            $group:{
-                _id:"$income_level",
-                total:{$sum:1}
-            }
-        }])
+      },
+    ]);
 
-        return res.status(200).json({IncomeLevelStats:incomeLevel});
-    } catch (error) {
-        
-    }
+    return res.status(200).json({ stats: results });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 }
-
 module.exports = controller;
