@@ -19,11 +19,11 @@ const beneficiarySchema = new Schema({
     },
     birth_date:{
         type: Date,
-        required: true
+        
     },
     starting_date:{
         type: Date,
-        required: true
+        
     }
     ,
     phone_number:{
@@ -36,12 +36,12 @@ const beneficiarySchema = new Schema({
     },
     address:{
         type: String,
-        required: true,
+        
         trim: true
     },
     birth_place:{
         type: String,
-        required: true,
+        
         trim: true
     },
     occupation:{
@@ -51,7 +51,7 @@ const beneficiarySchema = new Schema({
     },
     write_and_read:{
         type: Boolean,
-        required: true
+        
     },
     education_level:{
         type: String,
@@ -77,7 +77,7 @@ const beneficiarySchema = new Schema({
     },
     whatsapp:{
         type: Boolean,
-        required: true
+        
     },
     illness:{
         type:String,
@@ -117,13 +117,13 @@ const beneficiarySchema = new Schema({
     },
     house_condition:{
         type: String,
-        required: true,
+        
         trim: true
     },
     people_in_house:{
         quantity: {
             type: Number,
-            required: true,
+            
             default:0
         },
         relationship: {
@@ -134,11 +134,11 @@ const beneficiarySchema = new Schema({
     },
     shirt_size:{
         type: String,
-        required: true
+        
     },
     shoe_size:{
         type: String,
-        required: true
+        
     },
     discapacities:{
         type:String,
@@ -156,17 +156,17 @@ const beneficiarySchema = new Schema({
         type:[{
             name:{
                 type: String,
-                required: true,
+                
                 trim: true
             },
             url:{
                 type: String,
-                required: true,
+                
                 trim: true
             },
             path:{
                 type: String,
-                required: true,
+                
                 trim: true
             },
             date:{
@@ -187,21 +187,21 @@ const beneficiarySchema = new Schema({
     gender:{
         type: String,
         trim:true,
-        required:true
+        
     },
     department:{
         type: String,
-        required: true,
+        
         trim: true
     },
     municipality:{
         type: String,
-        required: true,
+        
         trim: true
     },
     zone:{
         type: String,
-        required: true,
+        
         trim: true
     },
     reference_address:{
@@ -210,7 +210,7 @@ const beneficiarySchema = new Schema({
     },
     referral_source:{
         type: String,
-        required: true,
+        
         trim: true
     },
     transportation:{

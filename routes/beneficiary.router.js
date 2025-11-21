@@ -62,11 +62,12 @@ router.post('/create',
 router.post('/upload/document/:identifier',authentication,authorization('modify_beneficiaries'),uploadDocs,beneficiaryController.uploadDocument);
 
 
+
 // PUT ROUTES
 
 //Update Beneficiary
 router.put('/update/:identifier',authentication,authorization('modify_beneficiaries'),beneficiaryController.updateBeneficiary);
-
+router.put('/update/photo/:identifier',authentication,authorization('modify_beneficiaries'),uploadPhoto,beneficiaryController.updatePhoto);
 
 // PATCH ROUTES
 

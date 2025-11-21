@@ -175,6 +175,63 @@ controller.createBeneficiary = async (req,res,next) =>{
 
 }
 
+controller.updatePhoto  = async(req,res,next)=>{
+    try {
+        const {identifier} = req.params;
+        const beneficiary = await Beneficiary.findById(identifier);
+        debug(beneficiary);
+        if(!beneficiary){
+            return res.status(404).json({error:"Beneficiary not found"});
+        }
+
+        if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    let foldername = `beneficiaries/${sanitizeName(beneficiary.name)}`
+    
+
+    if(beneficiary.photo){
+        try {
+    // Parsear la URL
+    const { pathname } = new URL(beneficiary.photo);
+
+    // Quitar el bucket name del inicio
+    const oldFilePath = pathname.replace(`/${bucket.name}/`, "");
+
+    const oldFile = bucket.file(oldFilePath);
+    await oldFile.delete();
+  } catch (err) {
+    console.warn("⚠️ No se pudo borrar la foto anterior:", err.message);
+    debug("⚠️ No se pudo borrar la foto anterior:", err);
+    return res.status(500).json({ message: "Error deleting old photo" });
+  }
+    }
+
+    debug("old photo deleted");
+
+    const ext = path.extname(req.file.originalname);
+    const filename = `${foldername}/photo${ext}`;
+    const file = bucket.file(filename);
+
+    await file.save(req.file.buffer,{metadata:{contentType: req.file.mimetype}});
+
+    await file.makePublic();
+
+    beneficiary.photo = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+    await beneficiary.save();
+
+     return res.status(200).json({
+      message: "Photo uploaded successfully",
+      photo: beneficiary.photo,
+    });
+
+    } catch (error) {
+        debug("Error in updatePhoto", error);
+        return res.status(500).json({ message: "Internal server error" }); 
+    }
+}
+
 controller.getAllBeneficieries = async(req,res,next)=>{
     try {
         let {page =1, limit = 7 } = req.query;
